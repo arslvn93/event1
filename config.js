@@ -21,7 +21,7 @@ const config = {
     "ctaText": "Claim Your Free Spot"
   },
   "hero": {
-    "badge": "🚨Exclusive Event For Toronto Home Sellers🚨",
+    "badge": "🚨Exclusive Event For Mississauga Home Buyers🚨",
     "headline": "Learn Why Most Toronto Homes Get <span class='highlight'>Completely Ignored By Buyers</span>... While Certain Sellers <span class='highlight'>Get Bidding Wars And Top Dollar Sales</span> - <em>For Free In Under 90 Mins</em>",
     "subtitle": "If you're <strong>planning to sell In The Next 24 Months</strong> and worried about sitting empty with <em>zero showings</em>, this <strong>free 90-minute event</strong> reveals the \"insider secrets\" that get <em>buyers flooding through your door.</em> Meet 5 industry experts who'll show you exactly <strong>what Your Home Is Worth</strong> and walk away with your personal game plan to <strong>get buyers fighting over your house.</strong>",
     "ctaText": "Claim Your Free Spot",
@@ -335,10 +335,6 @@ const config = {
     "showSpotsCounter": true,
     "glassmorphicHeader": true
   },
-  "lastUpdated": "2025-07-04T19:52:52.776Z",
+  "lastUpdated": "2025-07-04T20:16:49.085Z",
   "updatedVia": "admin-panel"
 };
-// Export for use in other files
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = config;
-}
