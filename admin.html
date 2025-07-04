@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toronto Home Sellers Workshop - Admin Configuration</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .password-prompt {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .password-prompt h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .password-prompt input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .password-prompt button {
+            background-color: #1abc9c;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.2s ease;
+        }
+
+        .password-prompt button:hover {
+            background-color: #16a085;
+        }
+
+        .admin-layout {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            background-color: #fff;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+
+        #sideNav {
+            width: 240px;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px 0;
+            height: 100%;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        #sideNav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #sideNav li a {
+            display: block;
+            color: #ecf0f1;
+            padding: 12px 20px;
+            text-decoration: none;
+            font-size: 15px;
+            border-left: 3px solid transparent;
+            transition: background-color 0.2s ease, border-left-color 0.2s ease;
+        }
+
+        #sideNav li a:hover {
+            background-color: #34495e;
+        }
+
+        #sideNav li a.active {
+            background-color: #1abc9c;
+            color: #fff;
+            font-weight: 500;
+            border-left-color: #16a085;
+        }
+
+        #contentPanels {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background-color: #f9fafb;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #contentPanels h1 {
+            color: #2c3e50;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 24px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        #configForm {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-panel-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .content-panel {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .content-panel.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .content-panel h2 {
+            font-size: 20px;
+            color: #34495e;
+            margin-top: 0;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #555;
+        }
+
+        input[type="text"],
+        input[type="url"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="number"],
+        input[type="password"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        label.checkbox-label {
+            display: inline-block;
+            vertical-align: middle;
+            margin-top: 0;
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: #1abc9c;
+            box-shadow: 0 0 0 2px rgba(26, 188, 156, 0.2);
+            outline: none;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .save-area {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            flex-shrink: 0;
+        }
+
+        button[type="submit"] {
+            background-color: #1abc9c;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s ease;
+            margin-right: 10px;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #16a085;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .dynamic-item-group {
+            border: 1px solid #e0e0e0;
+            background-color: #fff;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+
+        .dynamic-item-group h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+
+        .dynamic-item-controls {
+            text-align: right;
+            margin-top: 10px;
+        }
+
+        .dynamic-item-controls button {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+            margin-left: 5px;
+        }
+
+        .dynamic-item-controls button.add-item {
+            color: #2ecc71;
+            font-size: 1em;
+            background-color: #e8f8f0;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 0;
+        }
+
+        .dynamic-item-controls button:hover {
+            opacity: 0.7;
+        }
+
+        #message {
+            margin-top: 20px;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .success {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .panel-description {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- Password Protection -->
+    <div class="password-prompt" id="passwordPrompt">
+        <h1>Admin Access</h1>
+        <input type="password" id="passwordInput" placeholder="Enter password" />
+        <button onclick="checkPassword()">Login</button>
+        <div id="passwordError" style="color: #e74c3c; margin-top: 10px; display: none;">
+            Incorrect password. Please try again.
+        </div>
+    </div>
+
+    <!-- Admin Layout -->
+    <div class="admin-layout hidden" id="adminLayout">
+        <nav id="sideNav">
+            <ul>
+                <li><a href="#" data-target="metaPanel" class="active">Meta & SEO</a></li>
+                <li><a href="#" data-target="eventPanel">Event Details</a></li>
+                <li><a href="#" data-target="heroPanel">Hero Section</a></li>
+                <li><a href="#" data-target="problemsPanel">Problems & Solutions</a></li>
+                <li><a href="#" data-target="audiencePanel">Target Audience</a></li>
+                <li><a href="#" data-target="comparisonPanel">Comparison</a></li>
+                <li><a href="#" data-target="benefitsPanel">Benefits</a></li>
+                <li><a href="#" data-target="speakersPanel">Speakers</a></li>
+                <li><a href="#" data-target="faqPanel">FAQ</a></li>
+                <li><a href="#" data-target="contactPanel">Contact Info</a></li>
+                <li><a href="#" data-target="settingsPanel">Settings</a></li>
+            </ul>
+        </nav>
+        
+        <main id="contentPanels">
+            <h1>Toronto Home Sellers Workshop - Admin Configuration</h1>
+            
+            <form id="configForm">
+                <div class="content-panel-container">
+                    
+                    <!-- Meta & SEO Panel -->
+                    <div id="metaPanel" class="content-panel active">
+                        <h2>Meta & SEO</h2>
+                        <p class="panel-description">Configure page title, description, and SEO settings.</p>
+                        
+                        <div class="form-group">
+                            <label for="pageTitle">Page Title:</label>
+                            <input type="text" id="pageTitle" name="pageTitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="description">Meta Description:</label>
+                            <textarea id="description" name="description"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="keywords">Keywords:</label>
+                            <input type="text" id="keywords" name="keywords">
+                        </div>
+                    </div>
+
+                    <!-- Event Details Panel -->
+                    <div id="eventPanel" class="content-panel">
+                        <h2>Event Details</h2>
+                        <p class="panel-description">Configure event date, time, location, and capacity.</p>
+                        
+                        <div class="form-group">
+                            <label for="eventTitle">Event Title:</label>
+                            <input type="text" id="eventTitle" name="eventTitle">
+                        </div>
+                        
+                        <div class="two-column">
+                            <div class="form-group">
+                                <label for="eventDate">Event Date:</label>
+                                <input type="text" id="eventDate" name="eventDate">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="eventTime">Event Time:</label>
+                                <input type="text" id="eventTime" name="eventTime">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="eventLocation">Location:</label>
+                            <input type="text" id="eventLocation" name="eventLocation">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="locationNote">Location Note:</label>
+                            <input type="text" id="locationNote" name="locationNote">
+                        </div>
+                        
+                        <div class="two-column">
+                            <div class="form-group">
+                                <label for="totalSpots">Total Spots:</label>
+                                <input type="number" id="totalSpots" name="totalSpots">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="spotsLeft">Spots Left:</label>
+                                <input type="number" id="spotsLeft" name="spotsLeft">
+                            </div>
+                        </div>
+                        
+                        <div class="two-column">
+                            <div class="form-group">
+                                <label for="duration">Duration:</label>
+                                <input type="text" id="duration" name="duration">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="cost">Cost:</label>
+                                <input type="text" id="cost" name="cost">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hero Section Panel -->
+                    <div id="heroPanel" class="content-panel">
+                        <h2>Hero Section</h2>
+                        <p class="panel-description">Configure the main hero section content and CTAs.</p>
+                        
+                        <div class="form-group">
+                            <label for="heroBadge">Hero Badge:</label>
+                            <input type="text" id="heroBadge" name="heroBadge">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="heroHeadline">Hero Headline (HTML allowed):</label>
+                            <textarea id="heroHeadline" name="heroHeadline"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="heroSubtitle">Hero Subtitle (HTML allowed):</label>
+                            <textarea id="heroSubtitle" name="heroSubtitle"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ctaText">CTA Button Text:</label>
+                            <input type="text" id="ctaText" name="ctaText">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ctaSubtext">CTA Subtext:</label>
+                            <input type="text" id="ctaSubtext" name="ctaSubtext">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="urgencyText">Urgency Text:</label>
+                            <input type="text" id="urgencyText" name="urgencyText">
+                        </div>
+                    </div>
+
+                    <!-- Problems & Solutions Panel -->
+                    <div id="problemsPanel" class="content-panel">
+                        <h2>Problems & Solutions</h2>
+                        <p class="panel-description">Configure the problems section and solutions.</p>
+                        
+                        <div class="form-group">
+                            <label for="problemsTitle">Problems Title:</label>
+                            <input type="text" id="problemsTitle" name="problemsTitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="problemsItems">Problems (one per line):</label>
+                            <textarea id="problemsItems" name="problemsItems" rows="8"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="successStatement">Success Statement:</label>
+                            <textarea id="successStatement" name="successStatement"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="solutionsTitle">Solutions Title:</label>
+                            <textarea id="solutionsTitle" name="solutionsTitle"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="solutionsItems">Solutions (one per line):</label>
+                            <textarea id="solutionsItems" name="solutionsItems" rows="8"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Target Audience Panel -->
+                    <div id="audiencePanel" class="content-panel">
+                        <h2>Target Audience</h2>
+                        <p class="panel-description">Configure who this event is for.</p>
+                        
+                        <div class="form-group">
+                            <label for="audienceTitle">Audience Title:</label>
+                            <input type="text" id="audienceTitle" name="audienceTitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="audienceItems">Audience Points (one per line):</label>
+                            <textarea id="audienceItems" name="audienceItems" rows="6"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="audienceNote">Audience Note:</label>
+                            <textarea id="audienceNote" name="audienceNote"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Panel -->
+                    <div id="comparisonPanel" class="content-panel">
+                        <h2>Comparison Section</h2>
+                        <p class="panel-description">Configure the painful way vs express way comparison.</p>
+                        
+                        <div class="form-group">
+                            <label for="painfulWayTitle">Painful Way Title:</label>
+                            <input type="text" id="painfulWayTitle" name="painfulWayTitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="painfulWaySubtitle">Painful Way Subtitle:</label>
+                            <input type="text" id="painfulWaySubtitle" name="painfulWaySubtitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="painfulWayPoints">Painful Way Points (one per line):</label>
+                            <textarea id="painfulWayPoints" name="painfulWayPoints" rows="4"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="expressWayTitle">Express Way Title:</label>
+                            <input type="text" id="expressWayTitle" name="expressWayTitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="expressWaySubtitle">Express Way Subtitle:</label>
+                            <input type="text" id="expressWaySubtitle" name="expressWaySubtitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="expressWayPoints">Express Way Points (one per line):</label>
+                            <textarea id="expressWayPoints" name="expressWayPoints" rows="4"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Benefits Panel -->
+                    <div id="benefitsPanel" class="content-panel">
+                        <h2>Benefits Section</h2>
+                        <p class="panel-description">Configure the benefits of attending the event.</p>
+                        
+                        <div class="form-group">
+                            <label for="benefitsTitle">Benefits Title:</label>
+                            <textarea id="benefitsTitle" name="benefitsTitle"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="benefitsSubtitle">Benefits Subtitle:</label>
+                            <textarea id="benefitsSubtitle" name="benefitsSubtitle"></textarea>
+                        </div>
+                        
+                        <div id="benefitsContainer">
+                            <!-- Benefits will be loaded here -->
+                        </div>
+                        
+                        <button type="button" onclick="addBenefit()" class="add-item">Add Benefit</button>
+                    </div>
+
+                    <!-- Speakers Panel -->
+                    <div id="speakersPanel" class="content-panel">
+                        <h2>Speakers Section</h2>
+                        <p class="panel-description">Configure speaker information and their details.</p>
+                        
+                        <div class="form-group">
+                            <label for="speakersTitle">Speakers Title:</label>
+                            <input type="text" id="speakersTitle" name="speakersTitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="speakersSubtitle">Speakers Subtitle:</label>
+                            <textarea id="speakersSubtitle" name="speakersSubtitle"></textarea>
+                        </div>
+                        
+                        <div id="speakersContainer">
+                            <!-- Speakers will be loaded here -->
+                        </div>
+                        
+                        <button type="button" onclick="addSpeaker()" class="add-item">Add Speaker</button>
+                    </div>
+
+                    <!-- FAQ Panel -->
+                    <div id="faqPanel" class="content-panel">
+                        <h2>FAQ Section</h2>
+                        <p class="panel-description">Configure frequently asked questions.</p>
+                        
+                        <div class="form-group">
+                            <label for="faqTitle">FAQ Title:</label>
+                            <input type="text" id="faqTitle" name="faqTitle">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="faqSubtitle">FAQ Subtitle:</label>
+                            <textarea id="faqSubtitle" name="faqSubtitle"></textarea>
+                        </div>
+                        
+                        <div id="faqContainer">
+                            <!-- FAQ items will be loaded here -->
+                        </div>
+                        
+                        <button type="button" onclick="addFAQ()" class="add-item">Add FAQ</button>
+                    </div>
+
+                    <!-- Contact Panel -->
+                    <div id="contactPanel" class="content-panel">
+                        <h2>Contact Information</h2>
+                        <p class="panel-description">Configure contact details and footer information.</p>
+                        
+                        <div id="contactContainer">
+                            <!-- Contact agents will be loaded here -->
+                        </div>
+                        
+                        <button type="button" onclick="addAgent()" class="add-item">Add Agent</button>
+                        
+                        <div class="form-group">
+                            <label for="footerBrokerage">Footer Brokerage:</label>
+                            <input type="text" id="footerBrokerage" name="footerBrokerage">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="footerAddress">Footer Address:</label>
+                            <input type="text" id="footerAddress" name="footerAddress">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="footerCopyright">Footer Copyright:</label>
+                            <input type="text" id="footerCopyright" name="footerCopyright">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="footerPrivacyPolicy">Privacy Policy URL:</label>
+                            <input type="url" id="footerPrivacyPolicy" name="footerPrivacyPolicy">
+                        </div>
+                    </div>
+
+                    <!-- Settings Panel -->
+                    <div id="settingsPanel" class="content-panel">
+                        <h2>Settings</h2>
+                        <p class="panel-description">Configure theme settings and features.</p>
+                        
+                        <div class="form-group">
+                            <label for="settingsTheme">Theme:</label>
+                            <select id="settingsTheme" name="settingsTheme">
+                                <option value="dark">Dark</option>
+                                <option value="light">Light</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="settingsPrimaryColor">Primary Color:</label>
+                            <input type="text" id="settingsPrimaryColor" name="settingsPrimaryColor">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="settingsSecondaryColor">Secondary Color:</label>
+                            <input type="text" id="settingsSecondaryColor" name="settingsSecondaryColor">
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="checkbox" id="settingsEnableAnimations" name="settingsEnableAnimations">
+                            <label for="settingsEnableAnimations" class="checkbox-label">Enable Animations</label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="checkbox" id="settingsEnableScrollTracking" name="settingsEnableScrollTracking">
+                            <label for="settingsEnableScrollTracking" class="checkbox-label">Enable Scroll Tracking</label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="checkbox" id="settingsShowSpotsCounter" name="settingsShowSpotsCounter">
+                            <label for="settingsShowSpotsCounter" class="checkbox-label">Show Spots Counter</label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <input type="checkbox" id="settingsGlassmorphicHeader" name="settingsGlassmorphicHeader">
+                            <label for="settingsGlassmorphicHeader" class="checkbox-label">Glassmorphic Header</label>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <div class="save-area">
+                    <button type="submit">Save Configuration</button>
+                    <button type="button" onclick="loadConfig()">Reload from Config</button>
+                </div>
+            </form>
+            
+            <div id="message" class="hidden"></div>
+        </main>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // Password protection
+        function checkPassword() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === '123456') {
+                document.getElementById('passwordPrompt').classList.add('hidden');
+                document.getElementById('adminLayout').classList.remove('hidden');
+                loadConfig();
+            } else {
+                document.getElementById('passwordError').style.display = 'block';
+            }
+        }
+
+        function logout() {
+            document.getElementById('passwordPrompt').classList.remove('hidden');
+            document.getElementById('adminLayout').classList.add('hidden');
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordError').style.display = 'none';
+        }
+
+        // Navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('#sideNav a');
+            const panels = document.querySelectorAll('.content-panel');
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active from all links and panels
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    panels.forEach(p => p.classList.remove('active'));
+                    
+                    // Add active to clicked link and corresponding panel
+                    this.classList.add('active');
+                    const targetPanel = document.getElementById(this.dataset.target);
+                    if (targetPanel) {
+                        targetPanel.classList.add('active');
+                    }
+                });
+            });
+
+            // Handle password input enter key
+            document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkPassword();
+                }
+            });
+        });
+
+        // Load configuration from config.js
+        function loadConfig() {
+            if (typeof config === 'undefined') {
+                showMessage('Config file not found!', 'error');
+                return;
+            }
+
+            try {
+                // Meta & SEO
+                document.getElementById('pageTitle').value = config.meta.pageTitle || '';
+                document.getElementById('description').value = config.meta.description || '';
+                document.getElementById('keywords').value = config.meta.keywords || '';
+
+                // Event Details
+                document.getElementById('eventTitle').value = config.event.title || '';
+                document.getElementById('eventDate').value = config.event.date || '';
+                document.getElementById('eventTime').value = config.event.time || '';
+                document.getElementById('eventLocation').value = config.event.location || '';
+                document.getElementById('locationNote').value = config.event.locationNote || '';
+                document.getElementById('totalSpots').value = config.event.totalSpots || '';
+                document.getElementById('spotsLeft').value = config.event.spotsLeft || '';
+                document.getElementById('duration').value = config.event.duration || '';
+                document.getElementById('cost').value = config.event.cost || '';
+
+                // Hero Section
+                document.getElementById('heroBadge').value = config.hero.badge || '';
+                document.getElementById('heroHeadline').value = config.hero.headline || '';
+                document.getElementById('heroSubtitle').value = config.hero.subtitle || '';
+                document.getElementById('ctaText').value = config.hero.ctaText || '';
+                document.getElementById('ctaSubtext').value = config.hero.ctaSubtext || '';
+                document.getElementById('urgencyText').value = config.hero.urgencyText || '';
+
+                // Problems & Solutions
+                document.getElementById('problemsTitle').value = config.problems.title || '';
+                document.getElementById('problemsItems').value = config.problems.items ? config.problems.items.join('\n') : '';
+                document.getElementById('successStatement').value = config.successStatement || '';
+                document.getElementById('solutionsTitle').value = config.solutions.title || '';
+                document.getElementById('solutionsItems').value = config.solutions.items ? config.solutions.items.join('\n') : '';
+
+                // Target Audience
+                document.getElementById('audienceTitle').value = config.targetAudience.title || '';
+                document.getElementById('audienceItems').value = config.targetAudience.items ? config.targetAudience.items.join('\n') : '';
+                document.getElementById('audienceNote').value = config.targetAudience.note || '';
+
+                // Comparison
+                document.getElementById('painfulWayTitle').value = config.comparison.painfulWay.title || '';
+                document.getElementById('painfulWaySubtitle').value = config.comparison.painfulWay.subtitle || '';
+                document.getElementById('painfulWayPoints').value = config.comparison.painfulWay.points ? config.comparison.painfulWay.points.join('\n') : '';
+                document.getElementById('expressWayTitle').value = config.comparison.expressWay.title || '';
+                document.getElementById('expressWaySubtitle').value = config.comparison.expressWay.subtitle || '';
+                document.getElementById('expressWayPoints').value = config.comparison.expressWay.points ? config.comparison.expressWay.points.join('\n') : '';
+
+                // Benefits
+                document.getElementById('benefitsTitle').value = config.benefits.title || '';
+                document.getElementById('benefitsSubtitle').value = config.benefits.subtitle || '';
+                loadBenefits();
+
+                // Speakers
+                document.getElementById('speakersTitle').value = config.speakers.title || '';
+                document.getElementById('speakersSubtitle').value = config.speakers.subtitle || '';
+                loadSpeakers();
+
+                // FAQ
+                document.getElementById('faqTitle').value = config.faq.title || '';
+                document.getElementById('faqSubtitle').value = config.faq.subtitle || '';
+                loadFAQ();
+
+                // Contact
+                loadAgents();
+                document.getElementById('footerBrokerage').value = config.footer.brokerage || '';
+                document.getElementById('footerAddress').value = config.footer.address || '';
+                document.getElementById('footerCopyright').value = config.footer.copyright || '';
+                document.getElementById('footerPrivacyPolicy').value = config.footer.privacyPolicy || '';
+
+                // Settings
+                document.getElementById('settingsTheme').value = config.settings.theme || 'dark';
+                document.getElementById('settingsPrimaryColor').value = config.settings.primaryColor || '';
+                document.getElementById('settingsSecondaryColor').value = config.settings.secondaryColor || '';
+                document.getElementById('settingsEnableAnimations').checked = config.settings.enableAnimations || false;
+                document.getElementById('settingsEnableScrollTracking').checked = config.settings.enableScrollTracking || false;
+                document.getElementById('settingsShowSpotsCounter').checked = config.settings.showSpotsCounter || false;
+                document.getElementById('settingsGlassmorphicHeader').checked = config.settings.glassmorphicHeader || false;
+
+                showMessage('Configuration loaded successfully!', 'success');
+            } catch (error) {
+                showMessage('Error loading configuration: ' + error.message, 'error');
+            }
+        }
+
+        // Dynamic content loaders
+        function loadBenefits() {
+            const container = document.getElementById('benefitsContainer');
+            container.innerHTML = '';
+            
+            if (config.benefits.items) {
+                config.benefits.items.forEach((benefit, index) => {
+                    const benefitDiv = document.createElement('div');
+                    benefitDiv.className = 'dynamic-item-group';
+                    benefitDiv.innerHTML = `
+                        <h4>Benefit ${index + 1}</h4>
+                        <div class="form-group">
+                            <label>Title:</label>
+                            <input type="text" name="benefitTitle${index}" value="${benefit.title || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Description:</label>
+                            <textarea name="benefitDescription${index}">${benefit.description || ''}</textarea>
+                        </div>
+                        <div class="dynamic-item-controls">
+                            <button type="button" onclick="removeBenefit(${index})">Remove</button>
+                        </div>
+                    `;
+                    container.appendChild(benefitDiv);
+                });
+            }
+        }
+
+        function loadSpeakers() {
+            const container = document.getElementById('speakersContainer');
+            container.innerHTML = '';
+            
+            if (config.speakers.experts) {
+                config.speakers.experts.forEach((speaker, index) => {
+                    const speakerDiv = document.createElement('div');
+                    speakerDiv.className = 'dynamic-item-group';
+                    speakerDiv.innerHTML = `
+                        <h4>Speaker ${index + 1}</h4>
+                        <div class="form-group">
+                            <label>Name:</label>
+                            <input type="text" name="speakerName${index}" value="${speaker.name || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Title:</label>
+                            <input type="text" name="speakerTitle${index}" value="${speaker.title || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Description:</label>
+                            <textarea name="speakerDescription${index}">${speaker.description || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Points (one per line):</label>
+                            <textarea name="speakerPoints${index}">${speaker.points ? speaker.points.join('\n') : ''}</textarea>
+                        </div>
+                        <div class="dynamic-item-controls">
+                            <button type="button" onclick="removeSpeaker(${index})">Remove</button>
+                        </div>
+                    `;
+                    container.appendChild(speakerDiv);
+                });
+            }
+        }
+
+        function loadFAQ() {
+            const container = document.getElementById('faqContainer');
+            container.innerHTML = '';
+            
+            if (config.faq.questions) {
+                config.faq.questions.forEach((faq, index) => {
+                    const faqDiv = document.createElement('div');
+                    faqDiv.className = 'dynamic-item-group';
+                    faqDiv.innerHTML = `
+                        <h4>FAQ ${index + 1}</h4>
+                        <div class="form-group">
+                            <label>Question:</label>
+                            <input type="text" name="faqQuestion${index}" value="${faq.question || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Answer:</label>
+                            <textarea name="faqAnswer${index}">${faq.answer || ''}</textarea>
+                        </div>
+                        <div class="dynamic-item-controls">
+                            <button type="button" onclick="removeFAQ(${index})">Remove</button>
+                        </div>
+                    `;
+                    container.appendChild(faqDiv);
+                });
+            }
+        }
+
+        function loadAgents() {
+            const container = document.getElementById('contactContainer');
+            container.innerHTML = '';
+            
+            if (config.contact.agents) {
+                config.contact.agents.forEach((agent, index) => {
+                    const agentDiv = document.createElement('div');
+                    agentDiv.className = 'dynamic-item-group';
+                    agentDiv.innerHTML = `
+                        <h4>Agent ${index + 1}</h4>
+                        <div class="form-group">
+                            <label>Name:</label>
+                            <input type="text" name="agentName${index}" value="${agent.name || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Title:</label>
+                            <input type="text" name="agentTitle${index}" value="${agent.title || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Phone:</label>
+                            <input type="tel" name="agentPhone${index}" value="${agent.phone || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Email:</label>
+                            <input type="email" name="agentEmail${index}" value="${agent.email || ''}" />
+                        </div>
+                        <div class="dynamic-item-controls">
+                            <button type="button" onclick="removeAgent(${index})">Remove</button>
+                        </div>
+                    `;
+                    container.appendChild(agentDiv);
+                });
+            }
+        }
+
+        // Add/Remove functions
+        function addBenefit() {
+            const index = document.querySelectorAll('#benefitsContainer .dynamic-item-group').length;
+            const container = document.getElementById('benefitsContainer');
+            const benefitDiv = document.createElement('div');
+            benefitDiv.className = 'dynamic-item-group';
+            benefitDiv.innerHTML = `
+                <h4>Benefit ${index + 1}</h4>
+                <div class="form-group">
+                    <label>Title:</label>
+                    <input type="text" name="benefitTitle${index}" />
+                </div>
+                <div class="form-group">
+                    <label>Description:</label>
+                    <textarea name="benefitDescription${index}"></textarea>
+                </div>
+                <div class="dynamic-item-controls">
+                    <button type="button" onclick="removeBenefit(${index})">Remove</button>
+                </div>
+            `;
+            container.appendChild(benefitDiv);
+        }
+
+        function addSpeaker() {
+            const index = document.querySelectorAll('#speakersContainer .dynamic-item-group').length;
+            const container = document.getElementById('speakersContainer');
+            const speakerDiv = document.createElement('div');
+            speakerDiv.className = 'dynamic-item-group';
+            speakerDiv.innerHTML = `
+                <h4>Speaker ${index + 1}</h4>
+                <div class="form-group">
+                    <label>Name:</label>
+                    <input type="text" name="speakerName${index}" />
+                </div>
+                <div class="form-group">
+                    <label>Title:</label>
+                    <input type="text" name="speakerTitle${index}" />
+                </div>
+                <div class="form-group">
+                    <label>Description:</label>
+                    <textarea name="speakerDescription${index}"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Points (one per line):</label>
+                    <textarea name="speakerPoints${index}"></textarea>
+                </div>
+                <div class="dynamic-item-controls">
+                    <button type="button" onclick="removeSpeaker(${index})">Remove</button>
+                </div>
+            `;
+            container.appendChild(speakerDiv);
+        }
+
+        function addFAQ() {
+            const index = document.querySelectorAll('#faqContainer .dynamic-item-group').length;
+            const container = document.getElementById('faqContainer');
+            const faqDiv = document.createElement('div');
+            faqDiv.className = 'dynamic-item-group';
+            faqDiv.innerHTML = `
+                <h4>FAQ ${index + 1}</h4>
+                <div class="form-group">
+                    <label>Question:</label>
+                    <input type="text" name="faqQuestion${index}" />
+                </div>
+                <div class="form-group">
+                    <label>Answer:</label>
+                    <textarea name="faqAnswer${index}"></textarea>
+                </div>
+                <div class="dynamic-item-controls">
+                    <button type="button" onclick="removeFAQ(${index})">Remove</button>
+                </div>
+            `;
+            container.appendChild(faqDiv);
+        }
+
+        function addAgent() {
+            const index = document.querySelectorAll('#contactContainer .dynamic-item-group').length;
+            const container = document.getElementById('contactContainer');
+            const agentDiv = document.createElement('div');
+            agentDiv.className = 'dynamic-item-group';
+            agentDiv.innerHTML = `
+                <h4>Agent ${index + 1}</h4>
+                <div class="form-group">
+                    <label>Name:</label>
+                    <input type="text" name="agentName${index}" />
+                </div>
+                <div class="form-group">
+                    <label>Title:</label>
+                    <input type="text" name="agentTitle${index}" />
+                </div>
+                <div class="form-group">
+                    <label>Phone:</label>
+                    <input type="tel" name="agentPhone${index}" />
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" name="agentEmail${index}" />
+                </div>
+                <div class="dynamic-item-controls">
+                    <button type="button" onclick="removeAgent(${index})">Remove</button>
+                </div>
+            `;
+            container.appendChild(agentDiv);
+        }
+
+        function removeBenefit(index) {
+            loadBenefits();
+        }
+
+        function removeSpeaker(index) {
+            loadSpeakers();
+        }
+
+        function removeFAQ(index) {
+            loadFAQ();
+        }
+
+        function removeAgent(index) {
+            loadAgents();
+        }
+
+        // Form submission
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            try {
+                // Update config object with form values
+                const formData = new FormData(this);
+                
+                // Basic sections
+                config.meta.pageTitle = formData.get('pageTitle');
+                config.meta.description = formData.get('description');
+                config.meta.keywords = formData.get('keywords');
+                
+                config.event.title = formData.get('eventTitle');
+                config.event.date = formData.get('eventDate');
+                config.event.time = formData.get('eventTime');
+                config.event.location = formData.get('eventLocation');
+                config.event.locationNote = formData.get('locationNote');
+                config.event.totalSpots = parseInt(formData.get('totalSpots')) || 0;
+                config.event.spotsLeft = parseInt(formData.get('spotsLeft')) || 0;
+                config.event.duration = formData.get('duration');
+                config.event.cost = formData.get('cost');
+                
+                config.hero.badge = formData.get('heroBadge');
+                config.hero.headline = formData.get('heroHeadline');
+                config.hero.subtitle = formData.get('heroSubtitle');
+                config.hero.ctaText = formData.get('ctaText');
+                config.hero.ctaSubtext = formData.get('ctaSubtext');
+                config.hero.urgencyText = formData.get('urgencyText');
+                
+                config.problems.title = formData.get('problemsTitle');
+                config.problems.items = formData.get('problemsItems').split('\n').filter(item => item.trim());
+                config.successStatement = formData.get('successStatement');
+                config.solutions.title = formData.get('solutionsTitle');
+                config.solutions.items = formData.get('solutionsItems').split('\n').filter(item => item.trim());
+                
+                config.targetAudience.title = formData.get('audienceTitle');
+                config.targetAudience.items = formData.get('audienceItems').split('\n').filter(item => item.trim());
+                config.targetAudience.note = formData.get('audienceNote');
+                
+                config.comparison.painfulWay.title = formData.get('painfulWayTitle');
+                config.comparison.painfulWay.subtitle = formData.get('painfulWaySubtitle');
+                config.comparison.painfulWay.points = formData.get('painfulWayPoints').split('\n').filter(item => item.trim());
+                config.comparison.expressWay.title = formData.get('expressWayTitle');
+                config.comparison.expressWay.subtitle = formData.get('expressWaySubtitle');
+                config.comparison.expressWay.points = formData.get('expressWayPoints').split('\n').filter(item => item.trim());
+                
+                config.benefits.title = formData.get('benefitsTitle');
+                config.benefits.subtitle = formData.get('benefitsSubtitle');
+                
+                config.speakers.title = formData.get('speakersTitle');
+                config.speakers.subtitle = formData.get('speakersSubtitle');
+                
+                config.faq.title = formData.get('faqTitle');
+                config.faq.subtitle = formData.get('faqSubtitle');
+                
+                config.footer.brokerage = formData.get('footerBrokerage');
+                config.footer.address = formData.get('footerAddress');
+                config.footer.copyright = formData.get('footerCopyright');
+                config.footer.privacyPolicy = formData.get('footerPrivacyPolicy');
+                
+                config.settings.theme = formData.get('settingsTheme');
+                config.settings.primaryColor = formData.get('settingsPrimaryColor');
+                config.settings.secondaryColor = formData.get('settingsSecondaryColor');
+                config.settings.enableAnimations = formData.get('settingsEnableAnimations') === 'on';
+                config.settings.enableScrollTracking = formData.get('settingsEnableScrollTracking') === 'on';
+                config.settings.showSpotsCounter = formData.get('settingsShowSpotsCounter') === 'on';
+                config.settings.glassmorphicHeader = formData.get('settingsGlassmorphicHeader') === 'on';
+                
+                // Update dynamic arrays
+                updateDynamicArrays(formData);
+                
+                showMessage('Configuration updated successfully! You can now copy the config to your config.js file.', 'success');
+                
+                // Output the updated config for copying
+                console.log('Updated config:', config);
+                
+            } catch (error) {
+                showMessage('Error updating configuration: ' + error.message, 'error');
+            }
+        });
+
+        function updateDynamicArrays(formData) {
+            // Update benefits
+            config.benefits.items = [];
+            let benefitIndex = 0;
+            while (formData.get(`benefitTitle${benefitIndex}`) !== null) {
+                config.benefits.items.push({
+                    title: formData.get(`benefitTitle${benefitIndex}`),
+                    description: formData.get(`benefitDescription${benefitIndex}`)
+                });
+                benefitIndex++;
+            }
+            
+            // Update speakers
+            config.speakers.experts = [];
+            let speakerIndex = 0;
+            while (formData.get(`speakerName${speakerIndex}`) !== null) {
+                config.speakers.experts.push({
+                    name: formData.get(`speakerName${speakerIndex}`),
+                    title: formData.get(`speakerTitle${speakerIndex}`),
+                    description: formData.get(`speakerDescription${speakerIndex}`),
+                    points: formData.get(`speakerPoints${speakerIndex}`).split('\n').filter(point => point.trim())
+                });
+                speakerIndex++;
+            }
+            
+            // Update FAQ
+            config.faq.questions = [];
+            let faqIndex = 0;
+            while (formData.get(`faqQuestion${faqIndex}`) !== null) {
+                config.faq.questions.push({
+                    question: formData.get(`faqQuestion${faqIndex}`),
+                    answer: formData.get(`faqAnswer${faqIndex}`)
+                });
+                faqIndex++;
+            }
+            
+            // Update agents
+            config.contact.agents = [];
+            let agentIndex = 0;
+            while (formData.get(`agentName${agentIndex}`) !== null) {
+                config.contact.agents.push({
+                    name: formData.get(`agentName${agentIndex}`),
+                    title: formData.get(`agentTitle${agentIndex}`),
+                    phone: formData.get(`agentPhone${agentIndex}`),
+                    email: formData.get(`agentEmail${agentIndex}`)
+                });
+                agentIndex++;
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = type;
+            messageDiv.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageDiv.classList.add('hidden');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
