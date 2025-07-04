@@ -338,3 +338,7 @@ const config = {
   "lastUpdated": "2025-07-04T19:52:52.776Z",
   "updatedVia": "admin-panel"
 };
+// Export for use in other files
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = config;
+}
