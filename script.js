@@ -555,12 +555,16 @@ function handleAnswerClick(event) {
 }
 
 function submitFinalData() {
+    // Get primary agent email from contact section
+    const primaryAgentEmail = config.contact?.agents?.[0]?.email || "";
+    
     // Combine form data with question answers
     const finalPayload = {
         timestamp: new Date().toISOString(),
         source: "landing-page",
         ...window.storedFormData,
         eventName: config.event?.title || "Toronto Home Sellers Workshop",
+        agentEmail: primaryAgentEmail,
         questions: [],
         // Deployment info fields for form submissions
         tag: config.deploymentInfo?.tag || "",
