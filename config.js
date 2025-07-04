@@ -293,8 +293,8 @@ const config = {
     adminUrl: "https://n8n.salesgenius.co/webhook/eventupdate"
   },
   deploymentInfo: {
-    repoName: "Toronto-Workshop-Landing",
-    repoUrl: "https://github.com/username/Toronto-Workshop-Landing",
+    repoName: "event1",
+    repoUrl: "https://github.com/arslvn/event1",
     netlifyUrl: "http://toronto-workshop.netlify.app",
     netlifyId: "",
     tag: "Home Sellers Workshop",
