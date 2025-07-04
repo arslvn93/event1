@@ -288,9 +288,9 @@ const config = {
     }
   ],
   webhook: {
-    url: "https://hook.us1.make.com/your-webhook-url",
+    url: "https://n8n.salesgenius.co/webhook/eventsubmission",
     enabled: true,
-    adminUrl: "https://n8n.salesgenius.co/webhook/workshopupdate"
+    adminUrl: "https://n8n.salesgenius.co/webhook/eventupdate"
   },
   deploymentInfo: {
     repoName: "Toronto-Workshop-Landing",
@@ -299,7 +299,7 @@ const config = {
     netlifyId: "",
     tag: "Home Sellers Workshop",
     ghlWebhookUrl: "https://services.leadconnectorhq.com/hooks/bJbBMjcW619cJrLUJ3kY/webhook-trigger/3yNsurfrt9oBUtRBuygb",
-    webhookUrl: "https://n8n.salesgenius.co/webhook/workshopupdate",
+    webhookUrl: "https://n8n.salesgenius.co/webhook/eventupdate",
     facebookPixelId: "1057475448873422",
     salesGeniusAppApi: "",
     followUpBossEmail: ""
