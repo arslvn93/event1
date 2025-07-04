@@ -252,6 +252,58 @@ const config = {
     copyright: "© Copyright 2025. All rights reserved.",
     privacyPolicy: "https://ericareddy.com/privacy-policy/",
   },
+  modalQuestions: [
+    {
+      id: "timeline",
+      questionText: "When are you planning to sell your home?",
+      options: [
+        { value: "within_3_months", text: "Within 3 months" },
+        { value: "3_6_months", text: "3-6 months" },
+        { value: "6_12_months", text: "6-12 months" },
+        { value: "over_12_months", text: "Over 12 months" },
+        { value: "just_exploring", text: "Just exploring options" }
+      ]
+    },
+    {
+      id: "property_type",
+      questionText: "What type of property do you own?",
+      options: [
+        { value: "detached_house", text: "Detached House" },
+        { value: "semi_detached", text: "Semi-Detached" },
+        { value: "townhouse", text: "Townhouse" },
+        { value: "condo", text: "Condo/Apartment" },
+        { value: "duplex", text: "Duplex" }
+      ]
+    },
+    {
+      id: "biggest_concern",
+      questionText: "What's your biggest concern about selling?",
+      options: [
+        { value: "pricing_right", text: "Pricing it right" },
+        { value: "finding_buyers", text: "Finding interested buyers" },
+        { value: "timing", text: "Timing the market" },
+        { value: "repairs_staging", text: "Repairs and staging" },
+        { value: "paperwork", text: "Legal paperwork and process" }
+      ]
+    }
+  ],
+  webhook: {
+    url: "https://hook.us1.make.com/your-webhook-url",
+    enabled: true,
+    adminUrl: "https://n8n.salesgenius.co/webhook/workshopupdate"
+  },
+  deploymentInfo: {
+    repoName: "Toronto-Workshop-Landing",
+    repoUrl: "https://github.com/username/Toronto-Workshop-Landing",
+    netlifyUrl: "http://toronto-workshop.netlify.app",
+    netlifyId: "",
+    tag: "Home Sellers Workshop",
+    ghlWebhookUrl: "https://services.leadconnectorhq.com/hooks/bJbBMjcW619cJrLUJ3kY/webhook-trigger/3yNsurfrt9oBUtRBuygb",
+    webhookUrl: "https://n8n.salesgenius.co/webhook/workshopupdate",
+    facebookPixelId: "1057475448873422",
+    salesGeniusAppApi: "",
+    followUpBossEmail: ""
+  },
   settings: {
     theme: "dark",
     primaryColor: "#dc2626",

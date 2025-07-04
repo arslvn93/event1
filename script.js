@@ -422,33 +422,217 @@ function validateForm() {
 }
 
 function submitRegistration() {
+    const form = document.getElementById('registrationForm');
+    const formData = new FormData(form);
     const submitButton = document.querySelector('.registration-form button[type="submit"]');
     const originalText = submitButton.innerHTML;
     
+    // Store form data for later submission
+    const firstName = formData.get('firstName') || '';
+    const lastName = formData.get('lastName') || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    
+    window.storedFormData = {
+        name: fullName,
+        firstName: firstName,
+        lastName: lastName,
+        email: formData.get('email'),
+        phone: formData.get('phone'),
+        submittedAt: new Date().toISOString()
+    };
+    
     // Show loading state
-    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
     submitButton.disabled = true;
     
-    // Simulate API call
+    // Brief loading, then show modal questions
     setTimeout(() => {
         // Reset button
         submitButton.innerHTML = originalText;
         submitButton.disabled = false;
         
-        // Show success modal
-        const modal = document.getElementById('successModal');
-        modal.style.display = 'block';
+        // Show question modal instead of success modal
+        showQuestionModal();
         
-        // Update spots counter (simulate decrease)
-        updateSpotsCounter();
+    }, 1000);
+}
+
+// Question Modal Functionality
+let currentQuestionIndex = 0;
+let collectedAnswers = {};
+
+function showQuestionModal() {
+    if (!config || !config.modalQuestions || !config.modalQuestions.length) {
+        console.warn("No modal questions configured, proceeding with direct submission");
+        submitFinalData();
+        return;
+    }
+    
+    currentQuestionIndex = 0;
+    collectedAnswers = {};
+    
+    const questionModalOverlay = document.getElementById('questionModalOverlay');
+    const questionModalStepsContainer = document.getElementById('question-modal-steps-container');
+    
+    if (questionModalOverlay && questionModalStepsContainer) {
+        questionModalStepsContainer.innerHTML = '';
+        questionModalOverlay.classList.add('visible');
+        displayQuestionStep(currentQuestionIndex);
+    }
+}
+
+function hideQuestionModal() {
+    const questionModalOverlay = document.getElementById('questionModalOverlay');
+    if (questionModalOverlay) {
+        questionModalOverlay.classList.remove('visible');
+    }
+}
+
+function displayQuestionStep(stepIndex) {
+    const questionModalStepsContainer = document.getElementById('question-modal-steps-container');
+    
+    if (!questionModalStepsContainer || !config || !config.modalQuestions) {
+        console.error("Question modal structure or config missing!");
+        hideQuestionModal();
+        return;
+    }
+    
+    questionModalStepsContainer.innerHTML = '';
+    
+    if (stepIndex >= 0 && stepIndex < config.modalQuestions.length) {
+        const questionData = config.modalQuestions[stepIndex];
+        const stepDiv = document.createElement('div');
+        stepDiv.classList.add('modal-step');
+        stepDiv.id = `modal-step-${questionData.id}`;
         
-        // Reset form
-        document.getElementById('registrationForm').reset();
+        stepDiv.innerHTML = `
+            <p class="question-text">${questionData.questionText}</p>
+            <div class="modal-options">
+                ${questionData.options.map(option => `
+                    <button type="button" class="modal-option-btn"
+                            data-step="${stepIndex}" 
+                            data-question-id="${questionData.id}" 
+                            data-answer="${option.value}">
+                        ${option.text}
+                    </button>
+                `).join('')}
+            </div>
+        `;
         
-        // Track conversion (in real app, this would be Google Analytics, Facebook Pixel, etc.)
-        console.log('Registration successful - conversion tracked');
+        // Add event listeners to option buttons
+        stepDiv.querySelectorAll('.modal-option-btn').forEach(button => {
+            button.addEventListener('click', handleAnswerClick);
+        });
         
-    }, 2000);
+        questionModalStepsContainer.appendChild(stepDiv);
+        
+        // Trigger animation
+        setTimeout(() => {
+            stepDiv.classList.add('active');
+        }, 10);
+    } else {
+        // All questions answered, proceed with submission
+        console.log("All questions answered. Submitting data...");
+        submitFinalData();
+        hideQuestionModal();
+    }
+}
+
+function handleAnswerClick(event) {
+    const button = event.currentTarget;
+    const stepIndex = parseInt(button.dataset.step, 10);
+    const questionId = button.dataset.questionId;
+    const answerValue = button.dataset.answer;
+    
+    // Store the answer
+    collectedAnswers[questionId] = answerValue;
+    
+    console.log(`Question ${questionId} answered: ${answerValue}`);
+    
+    // Move to next question
+    currentQuestionIndex = stepIndex + 1;
+    displayQuestionStep(currentQuestionIndex);
+}
+
+function submitFinalData() {
+    // Combine form data with question answers
+    const finalPayload = {
+        timestamp: new Date().toISOString(),
+        source: "landing-page",
+        ...window.storedFormData,
+        eventName: config.event?.title || "Toronto Home Sellers Workshop",
+        questions: [],
+        // Deployment info fields for form submissions
+        tag: config.deploymentInfo?.tag || "",
+        ghlWebhookUrl: config.deploymentInfo?.ghlWebhookUrl || "",
+        webhookUrl: config.deploymentInfo?.webhookUrl || "",
+        facebookPixelId: config.deploymentInfo?.facebookPixelId || "",
+        followUpBossEmail: config.deploymentInfo?.followUpBossEmail || ""
+    };
+    
+    // Add question answers to payload
+    for (const questionId in collectedAnswers) {
+        if (collectedAnswers.hasOwnProperty(questionId)) {
+            const answerValue = collectedAnswers[questionId];
+            const questionObj = config.modalQuestions.find(q => q.id === questionId);
+            if (questionObj) {
+                const optionObj = questionObj.options.find(opt => opt.value === answerValue);
+                finalPayload.questions.push({
+                    question: questionObj.questionText,
+                    answer: optionObj ? optionObj.text : answerValue
+                });
+            }
+        }
+    }
+    
+    console.log("Final submission data:", finalPayload);
+    
+    // Submit to webhook if configured
+    if (config.webhook && config.webhook.enabled && config.webhook.url && config.webhook.url !== "https://hook.us1.make.com/your-webhook-url") {
+        submitToWebhook(finalPayload);
+    } else {
+        console.log("Webhook not configured, showing success modal");
+        showSuccessModal();
+    }
+}
+
+async function submitToWebhook(data) {
+    try {
+        const response = await fetch(config.webhook.url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+            mode: 'cors'
+        });
+        
+        if (response.ok) {
+            console.log("Data successfully submitted to webhook");
+            showSuccessModal();
+        } else {
+            console.error("Webhook submission failed:", response.status);
+            showSuccessModal(); // Still show success to user
+        }
+    } catch (error) {
+        console.error("Webhook submission error:", error);
+        showSuccessModal(); // Still show success to user
+    }
+}
+
+function showSuccessModal() {
+    const modal = document.getElementById('successModal');
+    modal.style.display = 'block';
+    
+    // Reset form
+    const form = document.getElementById('registrationForm');
+    form.reset();
+    
+    // Update spots counter
+    updateSpotsCounter();
+    
+    // Track conversion
+    console.log('Registration successful - conversion tracked');
 }
 
 function updateSpotsCounter() {
@@ -535,6 +719,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Question modal close functionality
+    const questionModalCloseBtn = document.getElementById('questionModalCloseBtn');
+    const questionModalOverlay = document.getElementById('questionModalOverlay');
+    
+    if (questionModalCloseBtn) {
+        questionModalCloseBtn.addEventListener('click', hideQuestionModal);
+    }
+    
+    if (questionModalOverlay) {
+        questionModalOverlay.addEventListener('click', (event) => {
+            if (event.target === questionModalOverlay) {
+                hideQuestionModal();
+            }
+        });
+    }
 });
 
 // Sticky header scroll effect
@@ -624,8 +824,14 @@ document.addEventListener('keydown', function(e) {
     // Close modal with Escape key
     if (e.key === 'Escape') {
         const modal = document.getElementById('successModal');
-        if (modal.style.display === 'block') {
+        const questionModal = document.getElementById('questionModalOverlay');
+        
+        if (modal && modal.style.display === 'block') {
             modal.style.display = 'none';
+        }
+        
+        if (questionModal && questionModal.classList.contains('visible')) {
+            hideQuestionModal();
         }
     }
     

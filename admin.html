@@ -345,6 +345,9 @@
                 <li><a href="#" data-target="speakersPanel">Speakers</a></li>
                 <li><a href="#" data-target="faqPanel">FAQ</a></li>
                 <li><a href="#" data-target="contactPanel">Contact Info</a></li>
+                <li><a href="#" data-target="modalQuestionsPanel">Modal Questions</a></li>
+                <li><a href="#" data-target="webhookPanel">Webhook Settings</a></li>
+                <li><a href="#" data-target="deploymentPanel">Deployment Info</a></li>
                 <li><a href="#" data-target="settingsPanel">Settings</a></li>
             </ul>
         </nav>
@@ -655,6 +658,111 @@
                         </div>
                     </div>
 
+                    <!-- Modal Questions Panel -->
+                    <div id="modalQuestionsPanel" class="content-panel">
+                        <h2>Modal Questions</h2>
+                        <p class="panel-description">Configure questions that appear after form submission to gather additional insights.</p>
+                        
+                        <div id="modalQuestionsContainer">
+                            <!-- Modal questions will be loaded here -->
+                        </div>
+                        
+                        <button type="button" onclick="addModalQuestion()" class="add-item">Add Question</button>
+                    </div>
+
+                    <!-- Webhook Settings Panel -->
+                    <div id="webhookPanel" class="content-panel">
+                        <h2>Webhook Settings</h2>
+                        <p class="panel-description">Configure webhook URL for data submission. Data will be sent to this endpoint when users complete the form and questions.</p>
+                        
+                        <div class="form-group">
+                            <input type="checkbox" id="webhookEnabled" name="webhookEnabled">
+                            <label for="webhookEnabled" class="checkbox-label">Enable Webhook Submission</label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="webhookUrl">Webhook URL (for form submissions):</label>
+                            <input type="url" id="webhookUrl" name="webhookUrl" placeholder="https://hook.us1.make.com/your-webhook-url">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="adminWebhookUrl">Admin Webhook URL (for config saves):</label>
+                            <input type="url" id="adminWebhookUrl" name="adminWebhookUrl" placeholder="https://n8n.salesgenius.co/webhook/workshopupdate">
+                        </div>
+                        
+                        <div class="form-group">
+                            <p style="font-size: 14px; color: #666; line-height: 1.5;">
+                                <strong>Data Format:</strong> The webhook will receive a JSON payload containing:<br>
+                                • Form data (name, email, phone, propertyAddress)<br>
+                                • Event information<br>
+                                • Question answers<br>
+                                • Timestamp
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Deployment Info Panel -->
+                    <div id="deploymentPanel" class="content-panel">
+                        <h2>Deployment Info</h2>
+                        <p class="panel-description">Configure deployment and integration settings for repository, hosting, and third-party services.</p>
+                        
+                        <div class="form-group">
+                            <label for="deploymentRepoName">Repository Name:</label>
+                            <input type="text" id="deploymentRepoName" name="deploymentRepoName" placeholder="Toronto-Workshop-Landing">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deploymentRepoUrl">Repository URL:</label>
+                            <input type="url" id="deploymentRepoUrl" name="deploymentRepoUrl" placeholder="https://github.com/username/repo">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deploymentNetlifyUrl">Netlify URL:</label>
+                            <input type="url" id="deploymentNetlifyUrl" name="deploymentNetlifyUrl" placeholder="http://your-site.netlify.app">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deploymentNetlifyId">Netlify Site ID:</label>
+                            <input type="text" id="deploymentNetlifyId" name="deploymentNetlifyId" placeholder="Optional Netlify site ID">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deploymentTag">Event Tag:</label>
+                            <input type="text" id="deploymentTag" name="deploymentTag" placeholder="Home Sellers Workshop">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deploymentGhlWebhookUrl">GoHighLevel Webhook URL:</label>
+                            <input type="url" id="deploymentGhlWebhookUrl" name="deploymentGhlWebhookUrl" placeholder="https://services.leadconnectorhq.com/hooks/...">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deploymentWebhookUrl">Primary Webhook URL:</label>
+                            <input type="url" id="deploymentWebhookUrl" name="deploymentWebhookUrl" placeholder="https://n8n.salesgenius.co/webhook/...">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deploymentFacebookPixelId">Facebook Pixel ID:</label>
+                            <input type="text" id="deploymentFacebookPixelId" name="deploymentFacebookPixelId" placeholder="1057475448873422">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deploymentSalesGeniusAppApi">SalesGenius App API:</label>
+                            <input type="text" id="deploymentSalesGeniusAppApi" name="deploymentSalesGeniusAppApi" placeholder="API key or endpoint">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="deploymentFollowUpBossEmail">FollowUpBoss Email:</label>
+                            <input type="email" id="deploymentFollowUpBossEmail" name="deploymentFollowUpBossEmail" placeholder="contact@company.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <p style="font-size: 14px; color: #666; line-height: 1.5;">
+                                <strong>Integration Note:</strong> Some values (ghlWebhookUrl, deploymentWebhookUrl) are used for form submissions, while others are for deployment configuration and analytics tracking.
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Settings Panel -->
                     <div id="settingsPanel" class="content-panel">
                         <h2>Settings</h2>
@@ -836,6 +944,26 @@
                 document.getElementById('footerCopyright').value = config.footer.copyright || '';
                 document.getElementById('footerPrivacyPolicy').value = config.footer.privacyPolicy || '';
 
+                // Modal Questions
+                loadModalQuestions();
+
+                // Webhook Settings
+                document.getElementById('webhookEnabled').checked = config.webhook?.enabled || false;
+                document.getElementById('webhookUrl').value = config.webhook?.url || '';
+                document.getElementById('adminWebhookUrl').value = config.webhook?.adminUrl || 'https://n8n.salesgenius.co/webhook/workshopupdate';
+
+                // Deployment Info
+                document.getElementById('deploymentRepoName').value = config.deploymentInfo?.repoName || '';
+                document.getElementById('deploymentRepoUrl').value = config.deploymentInfo?.repoUrl || '';
+                document.getElementById('deploymentNetlifyUrl').value = config.deploymentInfo?.netlifyUrl || '';
+                document.getElementById('deploymentNetlifyId').value = config.deploymentInfo?.netlifyId || '';
+                document.getElementById('deploymentTag').value = config.deploymentInfo?.tag || '';
+                document.getElementById('deploymentGhlWebhookUrl').value = config.deploymentInfo?.ghlWebhookUrl || '';
+                document.getElementById('deploymentWebhookUrl').value = config.deploymentInfo?.webhookUrl || '';
+                document.getElementById('deploymentFacebookPixelId').value = config.deploymentInfo?.facebookPixelId || '';
+                document.getElementById('deploymentSalesGeniusAppApi').value = config.deploymentInfo?.salesGeniusAppApi || '';
+                document.getElementById('deploymentFollowUpBossEmail').value = config.deploymentInfo?.followUpBossEmail || '';
+
                 // Settings
                 document.getElementById('settingsTheme').value = config.settings.theme || 'dark';
                 document.getElementById('settingsPrimaryColor').value = config.settings.primaryColor || '';
@@ -976,6 +1104,37 @@
             }
         }
 
+        function loadModalQuestions() {
+            const container = document.getElementById('modalQuestionsContainer');
+            container.innerHTML = '';
+            
+            if (config.modalQuestions) {
+                config.modalQuestions.forEach((question, index) => {
+                    const questionDiv = document.createElement('div');
+                    questionDiv.className = 'dynamic-item-group';
+                    questionDiv.innerHTML = `
+                        <h4>Question ${index + 1}</h4>
+                        <div class="form-group">
+                            <label>Question ID:</label>
+                            <input type="text" name="questionId${index}" value="${question.id || ''}" />
+                        </div>
+                        <div class="form-group">
+                            <label>Question Text:</label>
+                            <textarea name="questionText${index}">${question.questionText || ''}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Options (one per line, format: value|text):</label>
+                            <textarea name="questionOptions${index}" rows="5">${question.options ? question.options.map(opt => `${opt.value}|${opt.text}`).join('\n') : ''}</textarea>
+                        </div>
+                        <div class="dynamic-item-controls">
+                            <button type="button" onclick="removeModalQuestion(${index})">Remove</button>
+                        </div>
+                    `;
+                    container.appendChild(questionDiv);
+                });
+            }
+        }
+
         // Add/Remove functions
         function addBenefit() {
             const index = document.querySelectorAll('#benefitsContainer .dynamic-item-group').length;
@@ -1097,8 +1256,38 @@
             loadAgents();
         }
 
-        // Form submission
-        document.getElementById('configForm').addEventListener('submit', function(e) {
+        function addModalQuestion() {
+            const index = document.querySelectorAll('#modalQuestionsContainer .dynamic-item-group').length;
+            const container = document.getElementById('modalQuestionsContainer');
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'dynamic-item-group';
+            questionDiv.innerHTML = `
+                <h4>Question ${index + 1}</h4>
+                <div class="form-group">
+                    <label>Question ID:</label>
+                    <input type="text" name="questionId${index}" placeholder="e.g., timeline" />
+                </div>
+                <div class="form-group">
+                    <label>Question Text:</label>
+                    <textarea name="questionText${index}" placeholder="e.g., When are you planning to sell?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Options (one per line, format: value|text):</label>
+                    <textarea name="questionOptions${index}" rows="5" placeholder="within_3_months|Within 3 months&#10;3_6_months|3-6 months&#10;over_12_months|Over 12 months"></textarea>
+                </div>
+                <div class="dynamic-item-controls">
+                    <button type="button" onclick="removeModalQuestion(${index})">Remove</button>
+                </div>
+            `;
+            container.appendChild(questionDiv);
+        }
+
+        function removeModalQuestion(index) {
+            loadModalQuestions();
+        }
+
+        // Form submission with webhook
+        document.getElementById('configForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             try {
@@ -1166,16 +1355,60 @@
                 config.settings.showSpotsCounter = formData.get('settingsShowSpotsCounter') === 'on';
                 config.settings.glassmorphicHeader = formData.get('settingsGlassmorphicHeader') === 'on';
                 
+                // Update webhook settings
+                config.webhook = {
+                    enabled: formData.get('webhookEnabled') === 'on',
+                    url: formData.get('webhookUrl') || '',
+                    adminUrl: formData.get('adminWebhookUrl') || ''
+                };
+                
+                // Update deployment info
+                config.deploymentInfo = {
+                    repoName: formData.get('deploymentRepoName') || '',
+                    repoUrl: formData.get('deploymentRepoUrl') || '',
+                    netlifyUrl: formData.get('deploymentNetlifyUrl') || '',
+                    netlifyId: formData.get('deploymentNetlifyId') || '',
+                    tag: formData.get('deploymentTag') || '',
+                    ghlWebhookUrl: formData.get('deploymentGhlWebhookUrl') || '',
+                    webhookUrl: formData.get('deploymentWebhookUrl') || '',
+                    facebookPixelId: formData.get('deploymentFacebookPixelId') || '',
+                    salesGeniusAppApi: formData.get('deploymentSalesGeniusAppApi') || '',
+                    followUpBossEmail: formData.get('deploymentFollowUpBossEmail') || ''
+                };
+                
                 // Update dynamic arrays
                 updateDynamicArrays(formData);
                 
-                showMessage('Configuration updated successfully! You can now copy the config to your config.js file.', 'success');
+                // Add timestamp to track when config was last updated
+                config.lastUpdated = new Date().toISOString();
+                config.updatedVia = 'admin-panel';
                 
-                // Output the updated config for copying
-                console.log('Updated config:', config);
+                console.log('Submitting updated config:', config);
+                
+                // Submit to webhook (use deployment webhook URL for admin saves)
+                const adminWebhookUrl = config.deploymentInfo?.webhookUrl || formData.get('deploymentWebhookUrl');
+                
+                if (adminWebhookUrl && adminWebhookUrl.trim() !== '') {
+                    const response = await fetch(adminWebhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(config),
+                    });
+                    
+                    if (response.ok) {
+                        showMessage('Configuration saved successfully! Changes will be reflected when the config.js file is updated.', 'success');
+                    } else {
+                        const errorData = await response.text();
+                        throw new Error(`Error saving configuration: ${response.status} ${errorData}`);
+                    }
+                } else {
+                    showMessage('Configuration updated locally. Webhook URL not configured for remote saving.', 'success');
+                    console.log('Updated config (local only):', config);
+                }
                 
             } catch (error) {
-                showMessage('Error updating configuration: ' + error.message, 'error');
+                console.error("Error during configuration save:", error);
+                showMessage('Error saving configuration: ' + error.message, 'error');
             }
         });
 
@@ -1226,6 +1459,24 @@
                     email: formData.get(`agentEmail${agentIndex}`)
                 });
                 agentIndex++;
+            }
+            
+            // Update modal questions
+            config.modalQuestions = [];
+            let questionIndex = 0;
+            while (formData.get(`questionId${questionIndex}`) !== null) {
+                const optionsText = formData.get(`questionOptions${questionIndex}`);
+                const options = optionsText ? optionsText.split('\n').filter(line => line.trim()).map(line => {
+                    const [value, text] = line.split('|');
+                    return { value: value?.trim(), text: text?.trim() };
+                }) : [];
+                
+                config.modalQuestions.push({
+                    id: formData.get(`questionId${questionIndex}`),
+                    questionText: formData.get(`questionText${questionIndex}`),
+                    options: options
+                });
+                questionIndex++;
             }
         }
 
