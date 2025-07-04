@@ -213,13 +213,13 @@ const config = {
         "name": "Erica Reddy-Choquette",
         "title": "Broker",
         "phone": "416.587.2782",
-        "email": "Erica@EricaReddy.com"
+        "email": "arslan@salesgenius.co"
       },
       {
         "name": "Sarah Meng",
         "title": "Realtor",
         "phone": "416-989-2879",
-        "email": "sarahmeng@royallepage.ca"
+        "email": "arslan@salesgenius.co"
       }
     ]
   },
