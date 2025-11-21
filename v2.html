@@ -146,6 +146,21 @@
         .modal-option-btn:hover {
             background: var(--accent); color: white; border-color: var(--accent);
         }
+        
+        .sticky-nav {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 50;
+            animation: slideDown 0.3s ease-out forwards;
+            /* background and border removed to keep it transparent */
+        }
+        /* Removed color overrides to respect mix-blend-difference */
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -155,7 +170,7 @@
     <div class="cursor-ball cursor-ball-small"></div>
 
     <!-- Preloader -->
-    <div class="fixed inset-0 bg-[#050505] z-[100] flex flex-col justify-between p-8 text-white" id="preloader">
+    <div class="fixed inset-0 bg-[#050505] z-[100] flex flex-col justify-between p-8 text-white overflow-hidden" id="preloader">
         <div class="flex justify-between font-mono text-xs uppercase">
             <span>Initializing Blueprint</span>
             <span id="loader-counter">0%</span>
@@ -169,7 +184,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 w-full z-50 px-6 py-6 flex justify-between items-start mix-blend-difference text-white pointer-events-none">
+    <nav class="absolute top-0 left-0 w-full z-50 px-6 py-6 flex justify-between items-start mix-blend-difference text-white pointer-events-none">
         <div class="pointer-events-auto">
             <p class="font-bold tracking-tighter text-xl" id="nav-logo">BLUEPRINT</p>
             <p class="font-mono text-[10px] uppercase mt-1" id="nav-sub">A-Z GUIDE</p>
@@ -878,7 +893,8 @@
             tlLoader.to("#loader-bar", { width: "100%", duration: 1.5, ease: "power2.inOut" })
                     .to("#loader-text", { opacity: 1, duration: 0.5 }, "-=0.8")
                     .to("#loader-text", { y: -50, opacity: 0, duration: 0.5, delay: 0.5 })
-                    .to("#preloader", { height: 0, duration: 0.8, ease: "power4.inOut" });
+                    .to("#preloader", { height: 0, duration: 0.8, ease: "power4.inOut" })
+                    .set("#preloader", { display: "none" });
 
             // Hero
             gsap.from(".hero-fade", { scrollTrigger: { trigger: ".hero-fade", start: "top 90%" }, opacity: 0, y: 20, duration: 1, delay: 2.5 });
@@ -905,6 +921,28 @@
                     }
                 });
             }
+
+            // Sticky Nav Logic
+            const nav = document.querySelector('nav');
+            
+            ScrollTrigger.create({
+                trigger: "#catalogue-list", // Target the list container directly
+                start: "top top", // When top of catalogue list hits top of viewport
+                end: "max", // Keep active until end of page
+                onToggle: (self) => {
+                    if (window.innerWidth >= 768) {
+                        if (self.isActive) { 
+                            nav.classList.add('sticky-nav');
+                            nav.classList.remove('absolute'); // Remove absolute to avoid conflicts
+                            // Removed mix-blend manipulation to keep original style
+                        } else {
+                            nav.classList.remove('sticky-nav');
+                            nav.classList.add('absolute'); // Restore absolute
+                            // Removed mix-blend manipulation
+                        }
+                    }
+                }
+            });
 
             // Cursor
             const cursorBig = document.querySelector('.cursor-ball-large');
