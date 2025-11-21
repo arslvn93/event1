@@ -568,7 +568,7 @@
                 const sHtml = config.speakers.experts.map((exp, i) => `
                     <div class="film-slide group hover-trigger">
                         <div class="h-2/3 overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-500">
-                            <img src="${speakerImages[i % speakerImages.length]}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                            <img src="${exp.headshotUrl && exp.headshotUrl.trim() !== '' ? exp.headshotUrl : speakerImages[i % speakerImages.length]}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
                         </div>
                         <div class="p-8 h-1/3 flex flex-col justify-between border-t border-black/10">
                             <div>

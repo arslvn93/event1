@@ -440,7 +440,7 @@
                 document.getElementById('speakers-grid').innerHTML = config.speakers.experts.map((exp, i) => `
                     <div class="group">
                         <div class="aspect-[3/4] overflow-hidden mb-6 bg-gray-100">
-                            <img src="${speakersStock[i]}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 mix-blend-multiply">
+                            <img src="${exp.headshotUrl && exp.headshotUrl.trim() !== '' ? exp.headshotUrl : speakersStock[i]}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 mix-blend-multiply">
                         </div>
                         <h3 class="serif text-2xl mb-1">${exp.name}</h3>
                         <p class="text-xs uppercase tracking-widest text-[var(--accent)] mb-3">${exp.title}</p>

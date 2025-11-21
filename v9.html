@@ -506,7 +506,7 @@
                 const sHtml = config.speakers.experts.map((exp, i) => `
                     <div class="border border-white/10 p-6 group hover:border-[var(--primary)] transition-colors bg-[#080808] hover-trigger">
                         <div class="h-64 mb-6 overflow-hidden relative grayscale group-hover:grayscale-0 transition-all">
-                            <img src="${speakerImgs[i % speakerImgs.length]}" class="w-full h-full object-cover">
+                            <img src="${exp.headshotUrl && exp.headshotUrl.trim() !== '' ? exp.headshotUrl : speakerImgs[i % speakerImgs.length]}" class="w-full h-full object-cover">
                             <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-50"></div>
                             <div class="absolute bottom-2 left-2 bg-[var(--primary)] text-black px-2 text-xs font-bold uppercase">${exp.title}</div>
                         </div>

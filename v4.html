@@ -502,7 +502,7 @@
                 document.getElementById('speakers-grid').innerHTML = config.speakers.experts.map((exp, i) => `
                     <div class="group hover-trigger">
                         <div class="h-[400px] w-full overflow-hidden mb-6 bg-gray-200 relative">
-                             <img src="${speakerImgs[i]}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 transform group-hover:scale-105">
+                             <img src="${exp.headshotUrl && exp.headshotUrl.trim() !== '' ? exp.headshotUrl : speakerImgs[i]}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 transform group-hover:scale-105">
                         </div>
                         <h3 class="font-display text-2xl mb-1">${exp.name}</h3>
                         <p class="text-xs uppercase tracking-widest text-[#928D82] mb-3">${exp.title}</p>

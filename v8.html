@@ -444,7 +444,7 @@
                                 <h3 class="font-display text-4xl md:text-6xl group-hover:translate-x-4 transition-transform duration-500 uppercase">${exp.name}</h3>
                                 <p class="font-mono text-xs text-[var(--accent)] mt-2 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">${exp.title}</p>
                             </div>
-                            <img src="${speakerImages[i % speakerImages.length]}" class="absolute right-20 top-1/2 -translate-y-1/2 w-48 h-64 object-cover opacity-0 transition-all duration-500 grayscale pointer-events-none z-20">
+                            <img src="${exp.headshotUrl && exp.headshotUrl.trim() !== '' ? exp.headshotUrl : speakerImages[i % speakerImages.length]}" class="absolute right-20 top-1/2 -translate-y-1/2 w-48 h-64 object-cover opacity-0 transition-all duration-500 grayscale pointer-events-none z-20">
                             <span class="text-xs font-mono opacity-30">0${i+1}</span>
                         </div>
                     `).join('');

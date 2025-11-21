@@ -424,7 +424,7 @@
                     const stackHtml = config.speakers.experts.map((exp, i) => `
                         <div class="card flex flex-col md:flex-row hover-trigger" style="top: ${15 + (i*5)}vh;">
                             <div class="w-full md:w-1/3 h-64 md:h-auto overflow-hidden grayscale hover:grayscale-0 transition-all duration-500 relative">
-                                <img src="${speakerImgs[i % speakerImgs.length]}" class="w-full h-full object-cover">
+                                <img src="${exp.headshotUrl && exp.headshotUrl.trim() !== '' ? exp.headshotUrl : speakerImgs[i % speakerImgs.length]}" class="w-full h-full object-cover">
                                 <div class="absolute bottom-0 left-0 bg-[var(--red)] text-black px-3 py-1 font-mono text-xs font-bold uppercase">${exp.title}</div>
                             </div>
                             <div class="w-full md:w-2/3 p-8 md:p-12 flex flex-col justify-center">

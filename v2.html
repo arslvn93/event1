@@ -533,7 +533,7 @@
                                 </div>
                             </div>
                             <div class="h-full w-full relative overflow-hidden order-1 md:order-2">
-                                <img src="${fallbackImages[index % fallbackImages.length]}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" alt="${exp.name}">
+                                <img src="${exp.headshotUrl && exp.headshotUrl.trim() !== '' ? exp.headshotUrl : fallbackImages[index % fallbackImages.length]}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" alt="${exp.name}">
                             </div>
                         </div>
                     </div>
