@@ -1030,6 +1030,10 @@
                             <textarea name="speakerDescription${index}">${speaker.description || ''}</textarea>
                         </div>
                         <div class="form-group">
+                            <label>Headshot URL (optional):</label>
+                            <input type="url" name="speakerHeadshotUrl${index}" value="${speaker.headshotUrl || ''}" placeholder="https://example.com/image.jpg" />
+                        </div>
+                        <div class="form-group">
                             <label>Points (one per line):</label>
                             <textarea name="speakerPoints${index}">${speaker.points ? speaker.points.join('\n') : ''}</textarea>
                         </div>
@@ -1176,6 +1180,10 @@
                 <div class="form-group">
                     <label>Description:</label>
                     <textarea name="speakerDescription${index}"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Headshot URL (optional):</label>
+                    <input type="url" name="speakerHeadshotUrl${index}" placeholder="https://example.com/image.jpg" />
                 </div>
                 <div class="form-group">
                     <label>Points (one per line):</label>
@@ -1428,10 +1436,12 @@
             config.speakers.experts = [];
             let speakerIndex = 0;
             while (formData.get(`speakerName${speakerIndex}`) !== null) {
+                const headshotUrl = formData.get(`speakerHeadshotUrl${speakerIndex}`);
                 config.speakers.experts.push({
                     name: formData.get(`speakerName${speakerIndex}`),
                     title: formData.get(`speakerTitle${speakerIndex}`),
                     description: formData.get(`speakerDescription${speakerIndex}`),
+                    headshotUrl: headshotUrl && headshotUrl.trim() !== '' ? headshotUrl.trim() : null,
                     points: formData.get(`speakerPoints${speakerIndex}`).split('\n').filter(point => point.trim())
                 });
                 speakerIndex++;

@@ -213,13 +213,22 @@ function updateSpeakersSection() {
     if (speakersIntro) speakersIntro.innerHTML = config.speakers.subtitle;
     
     if (speakersGrid && config.speakers.experts) {
-        speakersGrid.innerHTML = config.speakers.experts.map((expert, index) => `
+        speakersGrid.innerHTML = config.speakers.experts.map((expert, index) => {
+            let imageHtml = '';
+            if (expert.headshotUrl && expert.headshotUrl.trim() !== '') {
+                // Use headshotUrl if provided
+                imageHtml = `<img src="${expert.headshotUrl}" alt="${expert.name}">`;
+            } else {
+                // Fallback to original behavior
+                imageHtml = index === 0 ? 
+                    '<img src="https://pixabay.com/get/g3c430faff86c8a8431d7feb26602345ba094c008e589b838ae4daea4683a3862389a610b3c52142e02f79894225725168eace7b197216488b76ba3f13319bee1_1280.jpg" alt="' + expert.name + '">' :
+                    '<div class="coming-soon-placeholder"><i class="fas fa-user"></i><span>Coming Soon</span></div>';
+            }
+            
+            return `
             <div class="speaker">
                 <div class="speaker-image">
-                    ${index === 0 ? 
-                        '<img src="https://pixabay.com/get/g3c430faff86c8a8431d7feb26602345ba094c008e589b838ae4daea4683a3862389a610b3c52142e02f79894225725168eace7b197216488b76ba3f13319bee1_1280.jpg" alt="' + expert.name + '">' :
-                        '<div class="coming-soon-placeholder"><i class="fas fa-user"></i><span>Coming Soon</span></div>'
-                    }
+                    ${imageHtml}
                 </div>
                 <div class="speaker-info">
                     <h3>${expert.name}</h3>
@@ -230,7 +239,8 @@ function updateSpeakersSection() {
                     </ul>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
     }
 }
 
