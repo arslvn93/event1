@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#0a0a0a]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE BLUEPRINT | ARCHITECTURAL</title>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP + Plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    <!-- SplitType for Text Animations -->
+    <script src="https://unpkg.com/split-type"></script>
+
+    <!-- External Config -->
+    <script src="config.js"></script>
+
+    <!-- Fonts: Bebas Neue (Headlines) & JetBrains Mono (Data) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #dc2626; /* Config Primary */
+            --secondary: #10b981; /* Config Secondary */
+            --bg: #050505;
+            --surface: #111111;
+            --text: #e5e5e5;
+            --line: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: hidden;
+            cursor: crosshair;
+        }
+
+        .font-display { font-family: 'Bebas Neue', sans-serif; text-transform: uppercase; line-height: 0.85; }
+
+        /* SMOOTH SCROLL */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto; }
+
+        /* GRID BACKGROUND */
+        .blueprint-grid {
+            position: fixed; inset: 0; z-index: -1;
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, var(--line) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+            pointer-events: none;
+        }
+
+        /* CUSTOM CURSOR */
+        #cursor {
+            position: fixed; top: 0; left: 0; width: 12px; height: 12px;
+            background: var(--primary); z-index: 9999; pointer-events: none;
+            mix-blend-mode: difference; transition: transform 0.1s;
+        }
+        body.hovering #cursor { transform: scale(6); background: white; mix-blend-mode: normal; opacity: 0.1; }
+
+        /* MARQUEE */
+        .marquee-wrapper { overflow: hidden; white-space: nowrap; display: flex; }
+        .marquee-content { display: flex; animation: scroll 20s linear infinite; }
+        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        /* HORIZONTAL SCROLL SECTION */
+        .horizontal-container { width: 300%; height: 100%; display: flex; flex-wrap: nowrap; }
+        .h-panel { width: 100vw; height: 100vh; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--line); position: relative; }
+
+        /* STACKING CARDS */
+        .card-stack { position: relative; padding-bottom: 10vh; }
+        .card-item {
+            position: sticky; top: 15vh; 
+            background: var(--surface); border: 1px solid var(--line);
+            margin-bottom: 5vh; padding: 3rem;
+            transform-origin: top center;
+            box-shadow: 0 -20px 50px rgba(0,0,0,0.5);
+        }
+
+        /* GLITCH TEXT EFFECT */
+        .glitch-hover:hover {
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+            color: var(--primary);
+        }
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        /* UTILS */
+        .highlight { color: var(--primary); }
+        .stroke-text { -webkit-text-stroke: 1px rgba(255,255,255,0.3); color: transparent; }
+        .glass-panel { background: rgba(20,20,20,0.8); backdrop-filter: blur(10px); border: 1px solid var(--line); }
+        
+        /* INPUTS */
+        .tech-input {
+            background: transparent; border: 1px solid var(--line); color: white;
+            padding: 1rem; font-family: 'JetBrains Mono', monospace; width: 100%;
+            transition: 0.3s;
+        }
+        .tech-input:focus { border-color: var(--primary); outline: none; background: rgba(220, 38, 38, 0.05); }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .option-btn {
+            border: 1px solid var(--line); padding: 1rem; margin-bottom: 0.5rem;
+            cursor: pointer; transition: 0.2s;
+        }
+        .option-btn:hover { background: var(--primary); color: black; border-color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <!-- GRID & CURSOR -->
+    <div class="blueprint-grid"></div>
+    <div id="cursor"></div>
+
+    <!-- PRELOADER -->
+    <div id="preloader" class="fixed inset-0 bg-[#050505] z-[100] flex flex-col justify-between p-8 border-4 border-[var(--surface)]">
+        <div class="flex justify-between font-mono text-xs text-[var(--primary)]">
+            <span>SYS.INIT</span>
+            <span>V.2.0.25</span>
+        </div>
+        <div class="text-center">
+            <div class="overflow-hidden">
+                <h1 class="font-display text-[15vw] leading-none translate-y-full" id="loader-text">BLUEPRINT</h1>
+            </div>
+        </div>
+        <div class="w-full h-1 bg-[#222]">
+            <div class="h-full bg-[var(--primary)] w-0" id="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- NAV (Fixed Corners) -->
+    <nav class="fixed top-0 left-0 w-full z-50 p-6 mix-blend-difference text-white flex justify-between items-start pointer-events-none">
+        <div class="pointer-events-auto hover-trigger">
+            <div class="font-bold tracking-tight text-xl">BLUEPRINT<span class="text-[var(--primary)]">.</span></div>
+            <div class="text-[10px] opacity-60 mt-1 max-w-[150px]" id="nav-loc">LOADING...</div>
+        </div>
+        <div class="text-right pointer-events-auto hover-trigger flex flex-col items-end">
+            <div class="border border-white/20 px-2 py-1 text-[10px] mb-2 inline-block">
+                <span class="w-2 h-2 bg-[var(--primary)] inline-block rounded-full mr-1 animate-pulse"></span>
+                <span id="nav-spots">...</span>
+            </div>
+            <a href="#register" class="bg-white text-black px-6 py-3 font-bold uppercase text-sm hover:bg-[var(--primary)] transition-colors" id="nav-cta">
+                Initialize
+            </a>
+        </div>
+    </nav>
+
+    <!-- 01. HERO: DATA DUMP -->
+    <header class="min-h-screen flex flex-col justify-end p-6 relative border-b border-white/10">
+        <!-- Background Data Visualization -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[30vw] font-display opacity-[0.03] pointer-events-none leading-none whitespace-nowrap">
+            SCHEMATIC
+        </div>
+
+        <div class="relative z-10 mb-12">
+            <div class="overflow-hidden">
+                <p class="text-[var(--primary)] font-bold mb-4 translate-y-full reveal-elem" id="hero-badge">/// CLASSIFIED WORKSHOP</p>
+            </div>
+            <h1 class="font-display text-[11vw] leading-[0.8] mb-8">
+                <div class="overflow-hidden"><span class="block translate-y-full reveal-elem" id="hero-line-1">THE</span></div>
+                <div class="overflow-hidden"><span class="block translate-y-full reveal-elem text-stroke" id="hero-line-2">BLUEPRINT</span></div>
+                <div class="overflow-hidden"><span class="block translate-y-full reveal-elem text-[var(--primary)]" id="hero-line-3">PROTOCOL</span></div>
+            </h1>
+            
+            <div class="grid md:grid-cols-12 gap-8 border-t border-white/10 pt-8 opacity-0 fade-elem">
+                <div class="md:col-span-6">
+                    <p class="text-xl md:text-2xl font-light text-gray-400 leading-tight" id="hero-subtitle"></p>
+                </div>
+                <div class="md:col-span-6 flex items-end justify-between">
+                    <div class="text-xs text-gray-500">
+                        <p id="hero-date">DATE: ...</p>
+                        <p>ACCESS: PUBLIC (LIMITED)</p>
+                    </div>
+                    <div class="animate-bounce text-2xl">↓</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 02. MARQUEE (TICKER) -->
+    <div class="border-b border-white/10 bg-[var(--primary)] text-black py-3 overflow-hidden">
+        <div class="marquee-wrapper">
+            <div class="marquee-content font-bold text-lg tracking-widest" id="marquee-text"></div>
+        </div>
+    </div>
+
+    <!-- 03. MISSION STATEMENT (BIG TYPE) -->
+    <section class="py-32 px-6 border-b border-white/10">
+        <div class="max-w-6xl mx-auto">
+            <p class="text-xs font-bold text-gray-500 mb-8">[ MISSION OBJECTIVE ]</p>
+            <h2 class="font-display text-6xl md:text-8xl leading-[0.9] text-justify" id="mission-statement">
+                <!-- JS Injected -->
+            </h2>
+        </div>
+    </section>
+
+    <!-- 04. PROBLEMS (STACKING CARDS) -->
+    <section class="py-32 px-6 relative border-b border-white/10">
+        <div class="grid md:grid-cols-12 gap-16">
+            <div class="md:col-span-4 h-fit sticky top-32">
+                <span class="text-[var(--primary)] text-xs font-bold mb-4 block">01 // CURRENT STATE</span>
+                <h2 class="font-display text-6xl md:text-7xl mb-6" id="problems-title"></h2>
+                <div class="w-full h-px bg-white/20"></div>
+            </div>
+            <div class="md:col-span-8 card-stack" id="problems-stack">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 05. COMPARISON (HORIZONTAL BLUEPRINT SCROLL) -->
+    <section id="blueprint-scroll" class="h-screen overflow-hidden bg-[#080808] relative border-b border-white/10">
+        <!-- Sticky Header -->
+        <div class="absolute top-8 left-8 z-20 mix-blend-difference pointer-events-none">
+            <h2 class="font-display text-4xl">THE SHIFT</h2>
+            <p class="text-xs text-[var(--secondary)]">SCROLL TO NAVIGATE >></p>
+        </div>
+
+        <div class="horizontal-container" id="horizontal-track">
+            
+            <!-- Panel 1: Old Way -->
+            <div class="h-panel bg-[#0f0f0f] text-gray-500">
+                <div class="max-w-3xl p-12 border border-white/5 bg-black">
+                    <h3 class="font-display text-6xl mb-8 text-gray-600" id="comp-pain-title"></h3>
+                    <ul class="space-y-6 text-sm font-mono" id="comp-pain-list"></ul>
+                </div>
+            </div>
+
+            <!-- Panel 2: New Way -->
+            <div class="h-panel bg-[var(--primary)] text-black relative overflow-hidden">
+                <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/blueprint.png')]"></div>
+                <div class="max-w-3xl p-12 border-4 border-black bg-white z-10 relative shadow-[20px_20px_0px_black]">
+                    <h3 class="font-display text-6xl mb-8 text-[var(--primary)]" id="comp-gain-title"></h3>
+                    <ul class="space-y-6 text-sm font-mono font-bold" id="comp-gain-list"></ul>
+                </div>
+            </div>
+
+            <!-- Panel 3: Benefits (Grid) -->
+            <div class="h-panel bg-white text-black w-[100vw]">
+                <div class="w-full h-full p-12 md:p-24 flex flex-col">
+                    <h3 class="font-display text-6xl mb-12" id="benefits-title"></h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-px bg-black border border-black flex-grow" id="benefits-grid">
+                        <!-- JS Injected -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 06. SPEAKERS (The Team) -->
+    <section class="py-32 px-6 border-b border-white/10">
+        <div class="mb-24 text-center">
+            <span class="text-xs text-gray-500 uppercase tracking-widest mb-2 block">03 // OPERATIVES</span>
+            <h2 class="font-display text-8xl" id="speakers-title"></h2>
+            <p class="text-gray-400 mt-4 font-mono text-sm" id="speakers-subtitle"></p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4" id="speakers-grid">
+            <!-- JS Injected -->
+        </div>
+    </section>
+
+    <!-- 07. SOLUTIONS (Checklist) -->
+    <section class="py-32 px-6 border-b border-white/10 bg-[#080808]">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="font-display text-5xl mb-12 text-[var(--primary)]" id="solutions-title"></h2>
+            <div class="space-y-4" id="solutions-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 08. FAQ -->
+    <section class="py-32 px-6 border-b border-white/10">
+        <div class="max-w-3xl mx-auto">
+            <h2 class="font-display text-4xl mb-12 text-center border-b border-white/10 pb-4" id="faq-title"></h2>
+            <div class="space-y-0" id="faq-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 09. REGISTRATION (Terminal) -->
+    <section id="register" class="min-h-screen flex flex-col justify-center py-24 px-6 relative">
+        <!-- BG FX -->
+        <div class="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none" 
+             style="background-image: repeating-linear-gradient(45deg, #111 25%, transparent 25%, transparent 75%, #111 75%, #111), repeating-linear-gradient(45deg, #111 25%, #050505 25%, #050505 75%, #111 75%, #111); background-position: 0 0, 10px 10px; background-size: 20px 20px;">
+        </div>
+
+        <div class="relative z-10 w-full max-w-4xl mx-auto glass-panel p-12 md:p-20 border-t-4 border-[var(--primary)]">
+            <div class="flex justify-between items-start mb-16">
+                <div>
+                    <h2 class="font-display text-6xl md:text-8xl leading-none" id="reg-title"></h2>
+                    <p class="font-mono text-sm text-gray-400 mt-4" id="reg-note"></p>
+                </div>
+                <div class="text-right hidden md:block">
+                    <div class="w-32 h-32 border border-white/20 flex items-center justify-center">
+                        <div class="text-[var(--primary)] text-6xl font-display">↓</div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="registrationForm" class="space-y-8">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="group">
+                        <label class="text-[10px] uppercase text-[var(--primary)] mb-2 block">ID_01: FIRST NAME</label>
+                        <input type="text" name="firstName" class="tech-input" placeholder="ENTER DATA" required>
+                    </div>
+                    <div class="group">
+                        <label class="text-[10px] uppercase text-[var(--primary)] mb-2 block">ID_02: LAST NAME</label>
+                        <input type="text" name="lastName" class="tech-input" placeholder="ENTER DATA" required>
+                    </div>
+                </div>
+                <div class="group">
+                    <label class="text-[10px] uppercase text-[var(--primary)] mb-2 block">COMM_01: EMAIL UPLINK</label>
+                    <input type="email" name="email" class="tech-input" placeholder="USER@DOMAIN.COM" required>
+                </div>
+                <div class="group">
+                    <label class="text-[10px] uppercase text-[var(--primary)] mb-2 block">COMM_02: MOBILE FREQUENCY</label>
+                    <input type="tel" name="phone" class="tech-input" placeholder="000-000-0000" required>
+                </div>
+
+                <div class="pt-8 flex items-center justify-between border-t border-white/10 mt-8">
+                    <span class="font-mono text-xs text-gray-500" id="reg-spots"></span>
+                    <button type="submit" id="submitBtn" class="bg-white text-black px-8 py-4 font-bold font-mono text-sm hover:bg-[var(--primary)] hover:text-white transition-colors hover-trigger">
+                        >> EXECUTE REGISTRATION
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="questionModalOverlay">
+        <div class="bg-[#111] border border-white/20 p-12 max-w-xl w-full relative shadow-[0_0_50px_rgba(220,38,38,0.3)]">
+            <div class="absolute top-0 left-0 w-full h-1 bg-[var(--primary)]"></div>
+            <button id="modalCloseBtn" class="absolute top-4 right-4 text-white/50 hover:text-white">[ESC]</button>
+            <div id="modal-steps-container"></div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="py-8 px-6 border-t border-white/10 flex justify-between items-end text-[10px] font-mono text-gray-500">
+        <div id="footer-copy"></div>
+        <div class="text-right">
+            <p id="footer-brokerage"></p>
+            <p id="footer-address" class="hidden"></p>
+            <a href="#" id="footer-privacy" class="text-[var(--secondary)] hover:text-[var(--primary)] transition-colors hidden">PRIVACY POLICY</a>
+            <p class="text-[var(--secondary)]">STATUS: ONLINE</p>
+        </div>
+    </footer>
+
+    <!-- LOGIC -->
+    <script>
+        /**
+         * 0. CONFIG LOADING
+         */
+        function waitForConfig(callback) {
+            if (typeof config !== 'undefined') {
+                callback();
+            } else {
+                // Check if config.js failed to load
+                setTimeout(() => {
+                    if (typeof config === 'undefined') {
+                        console.error('Config.js failed to load! Please ensure config.js exists and is accessible.');
+                        // Show error message to user
+                        document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: monospace; padding: 2rem; text-align: center; background: #050505; color: #dc2626;"><div><h1 style="color: #dc2626; margin-bottom: 1rem;">CONFIG ERROR</h1><p>config.js file not found or failed to load.</p><p style="margin-top: 1rem; color: #666;">Please ensure config.js exists in the same directory.</p></div></div>';
+                        return;
+                    }
+                    callback();
+                }, 100);
+            }
+        }
+
+        // SAFE INJECTOR
+        function inject(id, content, isHtml = false) {
+            const el = document.getElementById(id);
+            if(el) {
+                if(isHtml) el.innerHTML = content;
+                else el.textContent = content;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForConfig(() => {
+            // Theme Color Override
+                if (typeof config !== 'undefined' && config.settings) {
+            if(config.settings.primaryColor) document.documentElement.style.setProperty('--primary', config.settings.primaryColor);
+            if(config.settings.secondaryColor) document.documentElement.style.setProperty('--secondary', config.settings.secondaryColor);
+                }
+
+            document.title = config.meta.pageTitle;
+
+            // NAV
+            inject('nav-loc', config.event.location);
+            inject('nav-spots', config.event.spotsLeft + " SPOTS");
+            inject('nav-cta', config.header.ctaText);
+
+            // HERO
+                // Hero badge
+                const heroBadgeEl = document.getElementById('hero-badge');
+                if (heroBadgeEl && config.hero && config.hero.badge) {
+                    heroBadgeEl.textContent = "/// " + config.hero.badge.toUpperCase();
+                }
+                
+                // Split headline from config.hero.headline
+                const headline = config.hero.headline || "Learn The A-Z Blueprint To Buying Your First Home";
+                // Remove HTML tags for splitting
+                const cleanHeadline = headline.replace(/<[^>]*>/g, '');
+                // Split into three parts - try to find natural breaks
+                const words = cleanHeadline.split(' ');
+                const part1 = words.slice(0, Math.ceil(words.length / 3)).join(' ').toUpperCase();
+                const part2 = words.slice(Math.ceil(words.length / 3), Math.ceil(words.length * 2 / 3)).join(' ').toUpperCase();
+                const part3 = words.slice(Math.ceil(words.length * 2 / 3)).join(' ').toUpperCase();
+                
+                inject('hero-line-1', part1 || "THE", true);
+                inject('hero-line-2', part2 || "BLUEPRINT", true);
+                inject('hero-line-3', part3 || "PROTOCOL", true);
+            inject('hero-subtitle', config.hero.subtitle, true);
+            inject('hero-date', config.event.date);
+
+            // MARQUEE
+            const marqueeItems = config.solutions.items.map(i => i.replace(/<[^>]*>/g, '').toUpperCase()).join(" // ");
+            const marqueeHtml = marqueeItems + " // " + marqueeItems + " // " + marqueeItems;
+            document.querySelector('.marquee-content').innerHTML = `<span class="px-4">${marqueeHtml}</span>`;
+
+            // MISSION STATEMENT
+            inject('mission-statement', config.successStatement);
+
+            // PROBLEMS (Stacking Cards)
+            inject('problems-title', config.problems.title);
+            if(config.problems.items) {
+                const phtml = config.problems.items.map((item, i) => `
+                    <div class="card-item hover-trigger gltich-hover">
+                        <div class="flex justify-between items-start mb-4 border-b border-white/10 pb-4">
+                            <span class="text-[var(--primary)] font-mono text-xs">ERR_0${i+1}</span>
+                            <span class="font-mono text-xs text-gray-500">DETECTED</span>
+                        </div>
+                        <p class="text-2xl font-light leading-tight">${item}</p>
+                    </div>
+                `).join('');
+                inject('problems-stack', phtml, true);
+            }
+
+            // COMPARISON (Horizontal)
+            if(config.comparison && config.comparison.painfulWay && config.comparison.expressWay) {
+            inject('comp-pain-title', config.comparison.painfulWay.title);
+            inject('comp-pain-list', config.comparison.painfulWay.points.map(p => `<li>✕ ${p}</li>`).join(''), true);
+            inject('comp-gain-title', config.comparison.expressWay.title);
+            inject('comp-gain-list', config.comparison.expressWay.points.map(p => `<li class="text-black">✓ ${p}</li>`).join(''), true);
+            }
+
+            // BENEFITS (Grid inside horizontal)
+            if(config.benefits) {
+            inject('benefits-title', config.benefits.title);
+                
+                // Add benefits subtitle if element exists
+                const benefitsSubtitleEl = document.getElementById('benefits-subtitle');
+                if (benefitsSubtitleEl && config.benefits.subtitle) {
+                    inject('benefits-subtitle', config.benefits.subtitle, true);
+                }
+                
+            if(config.benefits.items) {
+                const bHtml = config.benefits.items.map((item, i) => `
+                    <div class="bg-white p-8 hover:bg-gray-100 transition-colors group">
+                        <span class="text-xs font-bold uppercase text-[var(--primary)] mb-2 block">Module 0${i+1}</span>
+                        <h4 class="font-display text-2xl mb-4 text-black">${item.title}</h4>
+                        <p class="text-sm text-gray-600 leading-relaxed">${item.description}</p>
+                    </div>
+                `).join('');
+                inject('benefits-grid', bHtml, true);
+                }
+            }
+
+            // SPEAKERS (Grid)
+            if(config.speakers) {
+            inject('speakers-title', config.speakers.title);
+            inject('speakers-subtitle', config.speakers.subtitle, true);
+            if(config.speakers.experts) {
+                const speakerImgs = [
+                    "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=500",
+                    "https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?q=80&w=500",
+                    "https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?q=80&w=500",
+                    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=500"
+                ];
+                const sHtml = config.speakers.experts.map((exp, i) => `
+                    <div class="border border-white/10 p-6 group hover:border-[var(--primary)] transition-colors bg-[#080808] hover-trigger">
+                        <div class="h-64 mb-6 overflow-hidden relative grayscale group-hover:grayscale-0 transition-all">
+                            <img src="${speakerImgs[i % speakerImgs.length]}" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-50"></div>
+                            <div class="absolute bottom-2 left-2 bg-[var(--primary)] text-black px-2 text-xs font-bold uppercase">${exp.title}</div>
+                        </div>
+                        <h3 class="font-display text-3xl uppercase mb-2">${exp.name}</h3>
+                        <p class="text-xs text-gray-500 leading-relaxed font-mono">${exp.description}</p>
+                    </div>
+                `).join('');
+                inject('speakers-grid', sHtml, true);
+                }
+            }
+
+            // SOLUTIONS
+            if(config.solutions) {
+            inject('solutions-title', config.solutions.title);
+            if(config.solutions.items) {
+                const sHtml = config.solutions.items.map(item => `
+                    <div class="p-4 border-l-2 border-white/20 hover:border-[var(--primary)] hover:bg-white/5 transition-all hover-trigger">
+                        <p class="text-lg font-light text-gray-300">${item}</p>
+                    </div>
+                `).join('');
+                inject('solutions-list', sHtml, true);
+                }
+            }
+
+            // FAQ
+            if(config.faq) {
+            inject('faq-title', config.faq.title);
+                
+                // Add FAQ subtitle if element exists
+                const faqSubtitleEl = document.getElementById('faq-subtitle');
+                if (faqSubtitleEl && config.faq.subtitle) {
+                    inject('faq-subtitle', config.faq.subtitle, true);
+                }
+                
+            if(config.faq.questions) {
+                const fHtml = config.faq.questions.map(q => `
+                    <div class="border-b border-white/10 py-6 cursor-pointer group faq-item hover-trigger">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-display text-2xl text-gray-400 group-hover:text-[var(--primary)] transition-colors">${q.question}</h3>
+                            <span class="text-2xl group-hover:rotate-90 transition-transform">+</span>
+                        </div>
+                        <div class="h-0 overflow-hidden transition-all duration-500 faq-content">
+                            <p class="pt-6 text-gray-500 font-mono text-sm leading-relaxed max-w-2xl">${q.answer}</p>
+                        </div>
+                    </div>
+                `).join('');
+                inject('faq-list', fHtml, true);
+                }
+            }
+
+            // REGISTER
+            inject('reg-title', config.registration.title);
+            inject('reg-note', config.registration.note);
+            inject('reg-spots', config.registration.urgency, true); // HTML allowed for strikethrough
+            
+            // Form submit button
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn && config.registration && config.registration.title) {
+                submitBtn.textContent = ">> " + config.registration.title.toUpperCase();
+            } else if (submitBtn && config.hero && config.hero.ctaText) {
+                submitBtn.textContent = ">> " + config.hero.ctaText.toUpperCase();
+            }
+            
+            // Footer
+            inject('footer-copy', config.footer.copyright);
+            inject('footer-brokerage', config.footer.brokerage);
+
+            // Footer address
+            const footerAddress = document.getElementById('footer-address');
+            if (footerAddress && config.footer && config.footer.address) {
+                footerAddress.classList.remove('hidden');
+                inject('footer-address', config.footer.address);
+            }
+            
+            // Privacy policy link
+            const footerPrivacy = document.getElementById('footer-privacy');
+            if (footerPrivacy && config.footer && config.footer.privacyPolicy) {
+                footerPrivacy.classList.remove('hidden');
+                footerPrivacy.href = config.footer.privacyPolicy;
+            }
+
+            // Update preloader text with event title
+            if (config.event && config.event.title) {
+                const loaderText = document.getElementById('loader-text');
+                if (loaderText) {
+                    loaderText.textContent = config.event.title.toUpperCase();
+                }
+            }
+
+            hideEmptySections();
+            initLogic();
+            setTimeout(initAnimations, 100);
+            });
+        });
+
+    // Hide sections when config data is missing
+    function hideEmptySections() {
+        // Problems section
+        if (!config.problems || !config.problems.items || config.problems.items.length === 0) {
+            const problemsSection = document.querySelector('#problems-stack')?.closest('section');
+            if (problemsSection) problemsSection.style.display = 'none';
+        }
+
+        // Benefits section (inside horizontal scroll)
+        if (!config.benefits || !config.benefits.items || config.benefits.items.length === 0) {
+            const benefitsSection = document.querySelector('#benefits-grid')?.closest('.h-panel');
+            if (benefitsSection) {
+                // Hide the entire horizontal scroll section if benefits is empty
+                const horizontalSection = document.querySelector('#blueprint-scroll');
+                if (horizontalSection) horizontalSection.style.display = 'none';
+            }
+        }
+
+        // Comparison section (inside horizontal scroll)
+        if (!config.comparison || (!config.comparison.painfulWay && !config.comparison.expressWay)) {
+            const comparisonSection = document.querySelector('#comp-pain-title')?.closest('.h-panel');
+            if (comparisonSection) {
+                // Hide the entire horizontal scroll section if comparison is empty
+                const horizontalSection = document.querySelector('#blueprint-scroll');
+                if (horizontalSection) horizontalSection.style.display = 'none';
+            }
+        }
+
+        // Speakers section
+        if (!config.speakers || !config.speakers.experts || config.speakers.experts.length === 0) {
+            const speakersSection = document.querySelector('#speakers-grid')?.closest('section');
+            if (speakersSection) speakersSection.style.display = 'none';
+        }
+
+        // Solutions section
+        if (!config.solutions || !config.solutions.items || config.solutions.items.length === 0) {
+            const solutionsSection = document.querySelector('#solutions-list')?.closest('section');
+            if (solutionsSection) solutionsSection.style.display = 'none';
+        }
+
+        // FAQ section
+        if (!config.faq || !config.faq.questions || config.faq.questions.length === 0) {
+            const faqSection = document.querySelector('#faq-list')?.closest('section');
+            if (faqSection) faqSection.style.display = 'none';
+        }
+
+        // Mission statement section
+        if (!config.successStatement) {
+            const missionSection = document.querySelector('#mission-statement')?.closest('section');
+            if (missionSection) missionSection.style.display = 'none';
+        }
+
+        // Marquee section
+        if (!config.solutions || !config.solutions.items || config.solutions.items.length === 0) {
+            const marqueeDiv = document.querySelector('#marquee-text')?.closest('div');
+            if (marqueeDiv && marqueeDiv.classList.contains('border-b')) {
+                marqueeDiv.style.display = 'none';
+            }
+        }
+    }
+
+        // LOGIC
+        function initLogic() {
+            // Cursor
+            const cursor = document.getElementById('cursor');
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+            document.querySelectorAll('.hover-trigger').forEach(el => {
+                el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+            });
+
+            // FAQ
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const content = item.querySelector('.faq-content');
+                    content.style.height = content.style.height ? null : content.scrollHeight + "px";
+                });
+            });
+
+            // Form
+            const form = document.getElementById('registrationForm');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('submitBtn');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+                
+                btn.textContent = "TRANSMITTING...";
+                btn.style.opacity = 0.5;
+                
+                setTimeout(() => showModal(data), 800);
+            });
+        }
+
+        function showModal(data) {
+            const modal = document.getElementById('questionModalOverlay');
+            const container = document.getElementById('modal-steps-container');
+            const answers = [];
+            modal.classList.add('active');
+
+            function renderQ(idx) {
+                container.innerHTML = '';
+                if(idx >= config.modalQuestions.length) {
+                    finish();
+                    return;
+                }
+                const q = config.modalQuestions[idx];
+                const div = document.createElement('div');
+                div.innerHTML = `<h3 class="font-display text-4xl mb-8 text-white leading-none">${q.questionText}</h3>`;
+                
+                q.options.forEach(opt => {
+                    const btn = document.createElement('div');
+                    btn.className = 'option-btn font-mono text-sm text-gray-400 hover:text-black';
+                    btn.textContent = `> ${opt.text}`;
+                    btn.onclick = () => {
+                        // Store answer with questionId and proper format
+                        answers.push({ 
+                            questionId: q.id,
+                            question: q.questionText, 
+                            answerValue: opt.value,
+                            answerText: opt.text
+                        });
+                        renderQ(idx + 1);
+                    };
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            }
+
+            function finish() {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <h2 class="font-display text-6xl text-[var(--primary)] mb-4">PROTOCOL ACCEPTED</h2>
+                        <p class="font-mono text-sm text-gray-500">UPLINK SECURE. CONFIRMATION SENT TO ${data.email}</p>
+                    </div>
+                `;
+                
+                // Get primary agent email from contact section
+                const primaryAgentEmail = config.contact?.agents?.[0]?.email || "";
+                
+                // Combine form data with question answers - match v4.html payload structure
+                const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+                
+                // Map answers to match v4.html format: { question, answer } where answer is the text, not value
+                const mappedQuestions = answers.map(ans => {
+                    return {
+                        question: ans.question || ans.questionText,
+                        answer: ans.answerText || ans.answerValue
+                    };
+                });
+
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    source: "landing-page",
+                    name: fullName,
+                    firstName: data.firstName || '',
+                    lastName: data.lastName || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    submittedAt: new Date().toISOString(),
+                    eventName: config.event?.title || "First Time Buyer Blueprint",
+                    agentEmail: primaryAgentEmail,
+                    questions: mappedQuestions,
+                    // Deployment info fields for form submissions
+                    tag: config.deploymentInfo?.tag || "",
+                    ghlWebhookUrl: config.deploymentInfo?.ghlWebhookUrl || "",
+                    webhookUrl: config.deploymentInfo?.webhookUrl || "",
+                    facebookPixelId: config.deploymentInfo?.facebookPixelId || "",
+                    followUpBossEmail: config.deploymentInfo?.followUpBossEmail || ""
+                };
+                
+                console.log("Submitting Payload:", payload);
+                
+                // Submit to webhook if configured - use config.webhook.url (matching v4.html logic)
+                let webhookUrl = null;
+                if (config.webhook && config.webhook.enabled && config.webhook.url && 
+                    config.webhook.url !== "https://hook.us1.make.com/your-webhook-url") {
+                    webhookUrl = config.webhook.url;
+                } else if (config.deploymentInfo && config.deploymentInfo.webhookUrl) {
+                    // Fallback to deploymentInfo.webhookUrl if webhook.url not configured
+                    webhookUrl = config.deploymentInfo.webhookUrl;
+                }
+                
+                if (webhookUrl && webhookUrl.trim() !== '') {
+                    fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload),
+                        mode: 'cors'
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log("Data successfully submitted to webhook");
+                        } else {
+                            console.error("Webhook submission failed:", response.status);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Webhook submission error:", err);
+                        // Still show success to user even if webhook fails
+                    });
+                } else {
+                    console.log("Webhook not configured, showing success modal");
+                }
+                
+                // Update spots counter
+                if (typeof config !== 'undefined' && config.event && config.event.spotsLeft > 0) {
+                    config.event.spotsLeft--;
+                    const navSpots = document.getElementById('nav-spots');
+                    if (navSpots) {
+                        navSpots.textContent = config.event.spotsLeft + " SPOTS";
+                    }
+                    
+                    // Update registration spots if element exists
+                    const regSpots = document.getElementById('reg-spots');
+                    if (regSpots && config.registration && config.registration.urgency) {
+                        // Update spots in the urgency string
+                        const updatedUrgency = config.registration.urgency.replace(/\d+/, config.event.spotsLeft);
+                        inject('reg-spots', updatedUrgency, true);
+                    }
+                }
+            }
+
+            document.getElementById('modalCloseBtn').onclick = () => {
+                modal.classList.remove('active');
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn && config.registration && config.registration.title) {
+                    submitBtn.textContent = ">> " + config.registration.title.toUpperCase();
+                } else if (submitBtn && config.hero && config.hero.ctaText) {
+                    submitBtn.textContent = ">> " + config.hero.ctaText.toUpperCase();
+                } else {
+                    submitBtn.textContent = ">> EXECUTE REGISTRATION";
+                }
+                submitBtn.style.opacity = 1;
+            };
+            renderQ(0);
+        }
+
+        // ANIMATIONS
+        function initAnimations() {
+            const lenis = new Lenis({ duration: 1.2 });
+            function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+            requestAnimationFrame(raf);
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Preloader
+            const tl = gsap.timeline();
+            tl.to("#loader-bar", { width: "100%", duration: 1.5, ease: "power2.inOut" })
+              .to("#loader-text", { y: 0, duration: 0.8, ease: "power4.out" }, "-=0.5")
+              .to("#preloader", { yPercent: -100, duration: 0.8, ease: "power4.inOut", delay: 0.2 });
+
+            // Hero
+            gsap.to(".reveal-elem", { y: 0, stagger: 0.1, duration: 1.5, ease: "power4.out", delay: 2.5 });
+            gsap.to(".fade-elem", { opacity: 1, duration: 1, delay: 3 });
+
+            // Horizontal Scroll
+            const track = document.getElementById("horizontal-track");
+            const container = document.getElementById("blueprint-scroll");
+            gsap.to(track, {
+                x: () => -(track.scrollWidth - window.innerWidth),
+                ease: "none",
+                scrollTrigger: {
+                    trigger: container,
+                    pin: true,
+                    scrub: 1,
+                    end: () => "+=" + track.scrollWidth
+                }
+            });
+
+            // Card Stack
+            gsap.utils.toArray('.card-item').forEach((card, i) => {
+                gsap.to(card, {
+                    scale: 1 - (0.05 * (3 - i)),
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 15%",
+                        end: "bottom top",
+                        scrub: true
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>

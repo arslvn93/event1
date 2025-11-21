@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    
+    <!-- Tailwind & Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- External Config -->
+    <script src="config.js"></script>
+
+    <!-- Fonts: Anton (Brutalist) & Archivo (Functional) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #FF3B00; /* International Orange */
+            --bg: #E8E6E1;      /* Concrete */
+            --black: #050505;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--black);
+            font-family: 'Archivo', sans-serif;
+            overflow-x: hidden;
+            cursor: none; /* Custom Cursor */
+        }
+
+        .font-display { font-family: 'Anton', sans-serif; text-transform: uppercase; line-height: 0.85; }
+
+        /* SMOOTH SCROLL */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto; }
+
+        /* NOISE OVERLAY */
+        #noise-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9000; opacity: 0.05;
+        }
+
+        /* CURSOR */
+        .cursor-dot {
+            position: fixed; top: 0; left: 0; width: 10px; height: 10px;
+            background-color: var(--primary); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 9999;
+        }
+        .cursor-label {
+            position: fixed; top: 0; left: 0;
+            background: var(--black); color: var(--bg);
+            padding: 4px 8px; font-size: 10px; font-family: 'Archivo', sans-serif;
+            text-transform: uppercase; pointer-events: none; z-index: 9999;
+            transform: translate(15px, 15px); opacity: 0; transition: opacity 0.2s;
+        }
+        body:hover .cursor-label { opacity: 1; }
+
+        /* MARQUEE */
+        .marquee-container { overflow: hidden; white-space: nowrap; display: flex; }
+        .marquee-content { display: flex; animation: marquee 20s linear infinite; }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        /* STACKING CARDS */
+        .card-stack-wrapper { position: relative; width: 100%; }
+        .stack-card {
+            position: sticky; top: 150px;
+            background: var(--bg); border-top: 4px solid var(--black);
+            transform-origin: center top;
+            box-shadow: 0 -20px 50px rgba(0,0,0,0.1);
+        }
+
+        /* TICKET VISUALS */
+        .ticket-notch {
+            width: 40px; height: 40px; background: var(--black);
+            border-radius: 50%; position: absolute; top: 50%;
+            transform: translateY(-50%); z-index: 10;
+        }
+        .notch-left { left: -20px; }
+        .notch-right { right: -20px; }
+
+        /* UTILITIES */
+        .stroke-text { -webkit-text-stroke: 2px var(--black); color: transparent; transition: 0.3s; }
+        .stroke-text:hover { color: var(--primary); -webkit-text-stroke: 0px; }
+        
+        .btn-brutalist {
+            background: var(--black); color: var(--bg); transition: all 0.2s;
+            position: relative; top: 0; left: 0; box-shadow: 6px 6px 0px var(--primary);
+        }
+        .btn-brutalist:hover { top: 2px; left: 2px; box-shadow: 4px 4px 0px var(--primary); }
+        .btn-brutalist:active { top: 6px; left: 6px; box-shadow: 0px 0px 0px var(--primary); }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5,5,5, 0.95); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-btn {
+            width: 100%; border: 2px solid var(--bg); color: var(--bg);
+            padding: 1rem; margin-bottom: 1rem; text-align: left;
+            font-family: 'Anton', sans-serif; text-transform: uppercase; font-size: 1.5rem;
+            background: transparent; transition: 0.2s;
+        }
+        .modal-btn:hover { background: var(--primary); border-color: var(--primary); color: black; }
+    </style>
+</head>
+<body>
+
+    <!-- NOISE OVERLAY -->
+    <canvas id="noise-canvas"></canvas>
+
+    <!-- CURSOR -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-label">View</div>
+
+    <!-- PRELOADER -->
+    <div id="preloader" class="fixed inset-0 bg-[var(--primary)] z-[100] flex flex-col items-center justify-center">
+        <div class="overflow-hidden">
+            <h1 class="font-display text-[15vw] leading-none translate-y-full" id="preloader-text">SHIFT</h1>
+        </div>
+        <div class="w-full max-w-md h-[2px] bg-black mt-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 h-full bg-white w-0" id="preloader-bar"></div>
+        </div>
+    </div>
+
+    <!-- NAV -->
+    <nav class="fixed top-0 left-0 w-full px-6 py-6 flex justify-between items-center z-50 mix-blend-difference text-[#E8E6E1]">
+        <div class="font-display text-3xl tracking-wide" id="nav-title">EVENT</div>
+        <div class="hidden md:flex gap-4 font-mono text-xs">
+            <span id="nav-date">DATE</span>
+            <span>//</span>
+            <span id="nav-spots">SPOTS</span>
+        </div>
+        <a href="#rsvp" class="font-bold uppercase tracking-widest text-xs bg-[#E8E6E1] text-black px-4 py-2 hover:bg-[var(--primary)] transition-colors" id="nav-cta">GET TICKET</a>
+    </nav>
+
+    <!-- HERO -->
+    <header class="relative min-h-screen pt-32 px-4 md:px-12 flex flex-col justify-between pb-12 border-b-4 border-black bg-[#E8E6E1]">
+        
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10">
+            <!-- Meta -->
+            <div class="md:col-span-2 font-mono text-xs space-y-6 border-l-4 border-black pl-6 h-fit pt-2">
+                <div>
+                    <p class="font-bold text-[var(--primary)]">LOCATION</p>
+                    <p id="hero-location">LOADING...</p>
+                </div>
+                <div>
+                    <p class="font-bold text-[var(--primary)]">DATE</p>
+                    <p id="hero-date-2">LOADING...</p>
+                </div>
+            </div>
+
+            <!-- Headline -->
+            <div class="md:col-span-10">
+                <h1 class="font-display text-[13vw] leading-[0.8] tracking-tight uppercase" id="hero-headline">
+                    <!-- JS INJECTED -->
+                </h1>
+            </div>
+        </div>
+
+        <!-- Floating Image (Decor) -->
+        <div class="absolute top-[20%] right-[5%] w-64 md:w-80 aspect-[3/4] border-4 border-black rotate-6 hover:rotate-0 transition-transform duration-500 z-20 hidden md:block group">
+            <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all">
+        </div>
+
+        <!-- Bottom -->
+        <div class="flex flex-col md:flex-row items-end justify-between mt-12 md:mt-0 relative z-10">
+            <div class="max-w-md mb-8 md:mb-0">
+                <p class="text-lg font-medium leading-tight" id="hero-subtitle"></p>
+            </div>
+            <div>
+                <a href="#rsvp" class="btn-brutalist px-12 py-6 font-display text-4xl uppercase inline-block" id="hero-btn">
+                    CLAIM TICKET
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MARQUEE -->
+    <div class="bg-black text-[#E8E6E1] py-4 border-b-4 border-[var(--primary)] overflow-hidden">
+        <div class="marquee-container">
+            <div class="marquee-content font-display text-6xl md:text-8xl gap-12 pr-12" id="marquee-1"></div>
+            <div class="marquee-content font-display text-6xl md:text-8xl gap-12 pr-12" id="marquee-2"></div>
+        </div>
+    </div>
+
+    <!-- CONTEXT (PROBLEMS) -->
+    <section class="py-32 px-4 md:px-12 grid md:grid-cols-2 gap-16 border-b-4 border-black relative">
+        <div class="relative">
+            <div class="sticky top-32 border-4 border-black bg-black overflow-hidden w-full aspect-square group">
+                <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-500 grayscale">
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="bg-[var(--primary)] w-32 h-32 rounded-full flex items-center justify-center font-display text-xl border-2 border-black animate-spin-slow">
+                        THE TRUTH
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <span class="font-mono text-xs font-bold bg-black text-white px-2 py-1 mb-6 inline-block">THE CONTEXT</span>
+            <h2 class="font-display text-6xl md:text-7xl mb-12" id="problems-title"></h2>
+            <div class="space-y-8 text-xl font-medium" id="problems-list">
+                <!-- JS INJECTED -->
+            </div>
+        </div>
+    </section>
+
+    <!-- AGENDA (STACKING CARDS) -->
+    <section class="py-32 px-4 md:px-12 bg-[#D4D4D4] border-b-4 border-black">
+        <div class="mb-24">
+            <h2 class="font-display text-[12vw] leading-[0.8] text-black/5 select-none">BLUEPRINT</h2>
+            <h2 class="font-display text-[12vw] leading-[0.8] absolute top-32 left-8 text-black mix-blend-overlay select-none">BLUEPRINT</h2>
+        </div>
+
+        <div class="card-stack-wrapper max-w-5xl mx-auto pb-24" id="benefits-stack">
+            <!-- JS INJECTED -->
+        </div>
+    </section>
+
+    <!-- DICHOTOMY -->
+    <section class="grid md:grid-cols-2 border-b-4 border-black min-h-screen">
+        <div class="bg-[#E8E6E1] p-12 md:p-24 border-b-4 md:border-b-0 md:border-r-4 border-black flex flex-col justify-center">
+            <h3 class="font-display text-5xl mb-8 text-gray-400" id="comp-pain-title">OLD WAY</h3>
+            <ul class="space-y-6 font-mono text-sm" id="comp-pain-list"></ul>
+        </div>
+        <div class="bg-black text-[#E8E6E1] p-12 md:p-24 flex flex-col justify-center">
+            <h3 class="font-display text-5xl mb-8 text-[var(--primary)]" id="comp-gain-title">NEW WAY</h3>
+            <ul class="space-y-6 font-mono text-sm" id="comp-gain-list"></ul>
+        </div>
+    </section>
+
+    <!-- SPEAKERS -->
+    <section class="py-32 px-4 md:px-12 border-b-4 border-black">
+        <h2 class="font-display text-6xl md:text-9xl mb-20 text-center" id="speakers-title">THE SQUAD</h2>
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6" id="speakers-grid">
+            <!-- JS INJECTED -->
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-32 px-4 md:px-12 bg-white border-b-4 border-black">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="font-display text-5xl mb-12 border-l-8 border-[var(--primary)] pl-6" id="faq-title">FAQ</h2>
+            <div class="space-y-4" id="faq-list">
+                <!-- JS INJECTED -->
+            </div>
+        </div>
+    </section>
+
+    <!-- RSVP TICKET -->
+    <section id="rsvp" class="py-24 px-4 bg-[#0a0a0a] flex justify-center items-center min-h-screen">
+        <div class="bg-[#E8E6E1] w-full max-w-5xl relative flex flex-col md:flex-row overflow-hidden border-4 border-white shadow-[15px_15px_0px_var(--primary)]">
+            
+            <!-- Ticket Notches -->
+            <div class="ticket-notch notch-left"></div>
+            <div class="ticket-notch notch-right"></div>
+            
+            <!-- Perforation -->
+            <div class="absolute top-0 right-1/3 h-full w-[2px] border-l-4 border-dashed border-black/20 hidden md:block"></div>
+
+            <!-- Form Side -->
+            <div class="md:w-2/3 p-12 z-20">
+                <h2 class="font-display text-7xl mb-2">ADMIT ONE</h2>
+                <p class="font-mono text-xs font-bold bg-[var(--primary)] inline-block px-2 py-1 mb-8">NO CHARGE // LIMITED CAPACITY</p>
+                
+                <form id="registrationForm" class="space-y-8">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="relative">
+                            <label class="block font-bold text-[10px] uppercase mb-1">First Name</label>
+                            <input type="text" name="firstName" required class="w-full bg-transparent border-b-4 border-black py-2 font-display text-3xl focus:outline-none focus:border-[var(--primary)] placeholder-gray-300" placeholder="JOHN">
+                        </div>
+                        <div class="relative">
+                            <label class="block font-bold text-[10px] uppercase mb-1">Last Name</label>
+                            <input type="text" name="lastName" required class="w-full bg-transparent border-b-4 border-black py-2 font-display text-3xl focus:outline-none focus:border-[var(--primary)] placeholder-gray-300" placeholder="DOE">
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <label class="block font-bold text-[10px] uppercase mb-1">Direct Email</label>
+                        <input type="email" name="email" required class="w-full bg-transparent border-b-4 border-black py-2 font-display text-3xl focus:outline-none focus:border-[var(--primary)] placeholder-gray-300" placeholder="YOU@EMAIL.COM">
+                    </div>
+                    <div class="relative">
+                        <label class="block font-bold text-[10px] uppercase mb-1">Mobile</label>
+                        <input type="tel" name="phone" required class="w-full bg-transparent border-b-4 border-black py-2 font-display text-3xl focus:outline-none focus:border-[var(--primary)] placeholder-gray-300" placeholder="555-0199">
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="w-full mt-8 btn-brutalist py-6 font-display text-3xl uppercase tracking-widest border-2 border-white">
+                        Generate Ticket
+                    </button>
+                </form>
+            </div>
+
+            <!-- Stub Side -->
+            <div class="md:w-1/3 bg-[var(--primary)] p-8 flex flex-col justify-between items-center text-center z-20 border-l-4 border-black">
+                <div class="w-32 h-32 bg-white p-2 border-4 border-black rotate-3">
+                    <div class="w-full h-full bg-black grid grid-cols-4 gap-1 p-1">
+                        <div class="bg-white col-span-2 row-span-2"></div>
+                        <div class="bg-white"></div><div class="bg-white"></div>
+                        <div class="bg-white col-span-2"></div>
+                    </div>
+                </div>
+                <div class="font-display text-6xl -rotate-90 whitespace-nowrap origin-center translate-y-12 opacity-50 mix-blend-multiply">
+                    EVENT 001
+                </div>
+                <div class="font-mono text-[10px] font-bold mt-12">
+                    NON-TRANSFERABLE <br> FINAL SALE
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="questionModalOverlay">
+        <div class="bg-[#E8E6E1] border-4 border-black shadow-[20px_20px_0px_var(--primary)] p-8 md:p-16 max-w-2xl w-full relative">
+            <button id="modalCloseBtn" class="absolute top-4 right-4 font-display text-2xl hover:text-[var(--primary)]">CLOSE [X]</button>
+            <div id="modal-steps-container"></div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-black text-[#E8E6E1] pt-20 pb-8 px-6 border-t-4 border-[var(--primary)]">
+        <div class="flex flex-col md:flex-row justify-between items-end">
+            <h2 class="font-display text-[15vw] leading-none text-[#1a1a1a]">IMPACT</h2>
+            <div class="text-right font-mono text-xs pb-2">
+                <p id="footer-copy">COPYRIGHT 2025</p>
+                <p id="footer-brokerage" class="hidden"></p>
+                <p id="footer-address" class="hidden"></p>
+                <a href="#" id="footer-privacy" class="text-[var(--primary)] hover:underline hidden">Privacy Policy</a>
+                <p class="text-[var(--primary)]">SCROLL TO TOP ↑</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MAIN LOGIC SCRIPT (AT BOTTOM) -->
+    <script>
+        /**
+         * 0. CONFIG LOADING
+         */
+        function waitForConfig(callback) {
+            if (typeof config !== 'undefined') {
+                callback();
+            } else {
+                // Check if config.js failed to load
+                setTimeout(() => {
+                    if (typeof config === 'undefined') {
+                        console.error('Config.js failed to load! Please ensure config.js exists and is accessible.');
+                        // Show error message to user
+                        document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: monospace; padding: 2rem; text-align: center;"><div><h1 style="color: red; margin-bottom: 1rem;">Configuration Error</h1><p>config.js file not found or failed to load.</p><p style="margin-top: 1rem; color: #666;">Please ensure config.js exists in the same directory.</p></div></div>';
+                        return;
+                    }
+                    callback();
+                }, 100);
+            }
+        }
+
+        // Safe Inject Helper
+        function safeInject(id, content, isHtml = false) {
+            const el = document.getElementById(id);
+            if (el) {
+                if (isHtml) el.innerHTML = content;
+                else el.textContent = content;
+            } else {
+                console.warn(`Missing Element ID: ${id}`);
+            }
+        }
+
+        // 1. INJECT CONTENT
+        function injectContent() {
+            document.title = config.meta.pageTitle;
+            
+            // Nav
+            safeInject('nav-title', config.event.title);
+            safeInject('nav-date', config.event.date);
+            safeInject('nav-spots', config.event.spotsLeft + " SPOTS");
+            safeInject('nav-cta', config.header.ctaText);
+
+            // Hero
+            safeInject('hero-location', config.event.location);
+            safeInject('hero-date-2', config.event.date);
+            safeInject('hero-headline', config.hero.headline, true); // HTML allowed
+            safeInject('hero-subtitle', config.hero.subtitle, true);
+            safeInject('hero-btn', config.hero.ctaText);
+
+            // Marquee (Loop items)
+            const tickerItems = config.solutions.items.map(i => i.replace(/<[^>]*>/g, '').toUpperCase()).join(" +++ ");
+            safeInject('marquee-1', tickerItems);
+            safeInject('marquee-2', tickerItems);
+
+            // Problems
+            safeInject('problems-title', config.problems.title);
+            if(config.problems.items) {
+                const problemHtml = config.problems.items.map(item => 
+                    `<div class="border-l-4 border-[var(--primary)] pl-6 py-2 hover:bg-white transition-colors duration-300">${item}</div>`
+                ).join('');
+                safeInject('problems-list', problemHtml, true);
+            }
+
+            // Benefits (Stacking Cards)
+            if(config.benefits && config.benefits.items) {
+                const benefitHtml = config.benefits.items.map((item, i) => `
+                    <div class="stack-card p-8 md:p-12 mb-8" style="top: ${150 + (i*40)}px;">
+                        <div class="flex justify-between items-start border-b-4 border-black pb-6 mb-6">
+                            <span class="font-display text-6xl text-[var(--primary)]">0${i+1}</span>
+                            <span class="font-bold font-mono text-sm pt-4 bg-black text-white px-2 h-fit">STEP ${i+1}</span>
+                        </div>
+                        <h3 class="font-display text-4xl md:text-6xl mb-6 uppercase leading-none">${item.title}</h3>
+                        <p class="text-xl font-medium leading-relaxed max-w-2xl">${item.description}</p>
+                    </div>
+                `).join('');
+                safeInject('benefits-stack', benefitHtml, true);
+            }
+
+            // Comparison
+            if(config.comparison && config.comparison.painfulWay && config.comparison.expressWay) {
+            safeInject('comp-pain-title', config.comparison.painfulWay.title);
+            if(config.comparison.painfulWay.points) {
+                const painHtml = config.comparison.painfulWay.points.map(p => 
+                    `<li class="flex gap-4 items-start group"><span class="bg-black text-white px-1 font-bold group-hover:bg-red-500 transition-colors">✕</span> <span class="uppercase font-bold">${p}</span></li>`
+                ).join('');
+                safeInject('comp-pain-list', painHtml, true);
+            }
+
+            safeInject('comp-gain-title', config.comparison.expressWay.title);
+            if(config.comparison.expressWay.points) {
+                const gainHtml = config.comparison.expressWay.points.map(p => 
+                    `<li class="flex gap-4 items-start group"><span class="bg-[var(--primary)] text-black px-1 font-bold group-hover:bg-white transition-colors">✓</span> <span class="uppercase font-bold">${p}</span></li>`
+                ).join('');
+                safeInject('comp-gain-list', gainHtml, true);
+                }
+            }
+
+            // Speakers
+            if(config.speakers) {
+            safeInject('speakers-title', config.speakers.title);
+            if(config.speakers.experts) {
+                const speakerImages = [
+                    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=500&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=500&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=500&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=500&auto=format&fit=crop"
+                ];
+                const speakersHtml = config.speakers.experts.map((exp, i) => `
+                    <div class="border-4 border-black bg-white p-4 hover:-translate-y-2 transition-transform shadow-[8px_8px_0px_var(--primary)] group">
+                        <div class="aspect-square overflow-hidden border-2 border-black mb-4 grayscale group-hover:grayscale-0 transition-all">
+                            <img src="${speakerImages[i % speakerImages.length]}" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="font-display text-3xl mb-1 uppercase">${exp.name}</h3>
+                        <p class="font-mono text-[10px] font-bold bg-black text-white inline-block px-2 py-1 mb-3">${exp.title}</p>
+                        <p class="text-sm font-medium leading-snug border-t-2 border-black pt-3">${exp.description}</p>
+                    </div>
+                `).join('');
+                safeInject('speakers-grid', speakersHtml, true);
+                }
+            }
+
+            // FAQ
+            if(config.faq) {
+            safeInject('faq-title', config.faq.title);
+            if(config.faq.questions) {
+                const faqHtml = config.faq.questions.map(q => `
+                    <div class="border-4 border-black p-6 hover:bg-black hover:text-white transition-colors group cursor-pointer">
+                        <h3 class="font-display text-2xl mb-2 uppercase flex justify-between">
+                            ${q.question} <span class="text-[var(--primary)]">+</span>
+                        </h3>
+                        <div class="max-h-0 overflow-hidden group-hover:max-h-40 transition-all duration-500">
+                            <p class="font-medium mt-4 pt-4 border-t border-white/20">${q.answer}</p>
+                        </div>
+                    </div>
+                `).join('');
+                safeInject('faq-list', faqHtml, true);
+                }
+            }
+
+            // Registration Section
+            // Keep "ADMIT ONE" as design choice, but add registration urgency and note if elements exist
+            const regUrgency = document.getElementById('reg-urgency');
+            if (regUrgency && config.registration && config.registration.urgency) {
+                safeInject('reg-urgency', config.registration.urgency, true);
+            }
+            
+            const regNote = document.getElementById('reg-note');
+            if (regNote && config.registration && config.registration.note) {
+                safeInject('reg-note', config.registration.note);
+            }
+            
+            // Form submit button
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn && config.registration && config.registration.title) {
+                submitBtn.textContent = config.registration.title.toUpperCase();
+            } else if (submitBtn && config.hero && config.hero.ctaText) {
+                submitBtn.textContent = config.hero.ctaText.toUpperCase();
+            }
+
+            // Footer
+            safeInject('footer-copy', config.footer.copyright);
+            
+            // Footer brokerage and address
+            const footerBrokerage = document.getElementById('footer-brokerage');
+            if (footerBrokerage && config.footer && config.footer.brokerage) {
+                footerBrokerage.classList.remove('hidden');
+                safeInject('footer-brokerage', config.footer.brokerage);
+            }
+            
+            const footerAddress = document.getElementById('footer-address');
+            if (footerAddress && config.footer && config.footer.address) {
+                footerAddress.classList.remove('hidden');
+                safeInject('footer-address', config.footer.address);
+            }
+            
+            // Privacy policy link
+            const footerPrivacy = document.getElementById('footer-privacy');
+            if (footerPrivacy && config.footer && config.footer.privacyPolicy) {
+                footerPrivacy.classList.remove('hidden');
+                footerPrivacy.href = config.footer.privacyPolicy;
+            }
+
+            // Update preloader text with event title
+            if (config.event && config.event.title) {
+                const preloaderText = document.getElementById('preloader-text');
+                if (preloaderText) {
+                    preloaderText.textContent = config.event.title.toUpperCase();
+                }
+            }
+        }
+
+        // Hide sections when config data is missing
+        function hideEmptySections() {
+            // Problems section
+            if (!config.problems || !config.problems.items || config.problems.items.length === 0) {
+                const problemsSection = document.querySelector('#problems-list')?.closest('section');
+                if (problemsSection) problemsSection.style.display = 'none';
+            }
+
+            // Benefits section
+            if (!config.benefits || !config.benefits.items || config.benefits.items.length === 0) {
+                const benefitsSection = document.querySelector('#benefits-stack')?.closest('section');
+                if (benefitsSection) benefitsSection.style.display = 'none';
+            }
+
+            // Comparison section
+            if (!config.comparison || (!config.comparison.painfulWay && !config.comparison.expressWay)) {
+                const comparisonSection = document.querySelector('#comp-pain-title')?.closest('section');
+                if (comparisonSection) comparisonSection.style.display = 'none';
+            }
+
+            // Speakers section
+            if (!config.speakers || !config.speakers.experts || config.speakers.experts.length === 0) {
+                const speakersSection = document.querySelector('#speakers-grid')?.closest('section');
+                if (speakersSection) speakersSection.style.display = 'none';
+            }
+
+            // FAQ section
+            if (!config.faq || !config.faq.questions || config.faq.questions.length === 0) {
+                const faqSection = document.querySelector('#faq-list')?.closest('section');
+                if (faqSection) faqSection.style.display = 'none';
+            }
+
+            // Marquee section
+            if (!config.solutions || !config.solutions.items || config.solutions.items.length === 0) {
+                const marqueeDiv = document.querySelector('#marquee-1')?.closest('div');
+                if (marqueeDiv && marqueeDiv.classList.contains('marquee-container')) {
+                    marqueeDiv.closest('div').style.display = 'none';
+                }
+            }
+        }
+
+        // 2. INTERACTION
+        function initLogic() {
+            // Modal Form Logic
+            const form = document.getElementById('registrationForm');
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const btn = document.getElementById('submitBtn');
+                    const formData = new FormData(form);
+                    
+                    const collectedData = {
+                        firstName: formData.get('firstName'),
+                        lastName: formData.get('lastName'),
+                        email: formData.get('email'),
+                        phone: formData.get('phone')
+                    };
+
+                    // Use config value for processing text or default
+                    btn.textContent = "PROCESSING...";
+                    btn.style.backgroundColor = "var(--primary)";
+                    btn.style.color = "black";
+                    btn.disabled = true;
+
+                    setTimeout(() => showModal(collectedData), 800);
+                });
+            }
+
+            // Noise Canvas
+            const canvas = document.getElementById('noise-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const resize = () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            };
+            resize();
+            window.addEventListener('resize', resize);
+
+            function noise() {
+                const w = canvas.width, h = canvas.height;
+                const idata = ctx.createImageData(w, h);
+                const buffer32 = new Uint32Array(idata.data.buffer);
+                const len = buffer32.length;
+
+                for (let i = 0; i < len; i++) {
+                    if (Math.random() < 0.05) buffer32[i] = 0xff000000;
+                }
+                ctx.putImageData(idata, 0, 0);
+                requestAnimationFrame(noise);
+            }
+            noise();
+
+            // Cursor Follower
+            const dot = document.querySelector('.cursor-dot');
+            const label = document.querySelector('.cursor-label');
+            window.addEventListener('mousemove', (e) => {
+                gsap.to(dot, { x: e.clientX, y: e.clientY, duration: 0.1 });
+                gsap.to(label, { x: e.clientX + 20, y: e.clientY + 20, duration: 0.2 });
+            });
+        }
+
+        function showModal(data) {
+            const modal = document.getElementById('questionModalOverlay');
+            const container = document.getElementById('modal-steps-container');
+            const answers = [];
+            modal.classList.add('visible');
+
+            function renderQ(idx) {
+                container.innerHTML = '';
+                if(idx >= config.modalQuestions.length) {
+                    finish();
+                    return;
+                }
+                const q = config.modalQuestions[idx];
+                const div = document.createElement('div');
+                div.innerHTML = `<h3 class="font-display text-4xl mb-8 uppercase leading-none">${q.questionText}</h3>`;
+                
+                q.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'modal-btn';
+                    btn.textContent = opt.text;
+                    btn.onclick = () => {
+                        // Store answer with questionId and proper format
+                        answers.push({ 
+                            questionId: q.id,
+                            question: q.questionText, 
+                            answerValue: opt.value,
+                            answerText: opt.text
+                        });
+                        renderQ(idx + 1);
+                    }
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            }
+
+            function finish() {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="font-display text-8xl text-[var(--primary)] mb-4">GRANTED</div>
+                        <p class="font-mono font-bold text-xl">CHECK INBOX: ${data.email}</p>
+                    </div>
+                `;
+                
+                // Get primary agent email from contact section
+                const primaryAgentEmail = config.contact?.agents?.[0]?.email || "";
+                
+                // Combine form data with question answers - match v4.html payload structure
+                const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+                
+                // Map answers to match v4.html format: { question, answer } where answer is the text, not value
+                const mappedQuestions = answers.map(ans => {
+                    return {
+                        question: ans.question || ans.questionText,
+                        answer: ans.answerText || ans.answerValue
+                    };
+                });
+
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    source: "landing-page",
+                    name: fullName,
+                    firstName: data.firstName || '',
+                    lastName: data.lastName || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    submittedAt: new Date().toISOString(),
+                    eventName: config.event?.title || "First Time Buyer Blueprint",
+                    agentEmail: primaryAgentEmail,
+                    questions: mappedQuestions,
+                    // Deployment info fields for form submissions
+                    tag: config.deploymentInfo?.tag || "",
+                    ghlWebhookUrl: config.deploymentInfo?.ghlWebhookUrl || "",
+                    webhookUrl: config.deploymentInfo?.webhookUrl || "",
+                    facebookPixelId: config.deploymentInfo?.facebookPixelId || "",
+                    followUpBossEmail: config.deploymentInfo?.followUpBossEmail || ""
+                };
+                
+                console.log("Submitting Payload:", payload);
+                
+                // Submit to webhook if configured - use config.webhook.url (matching v4.html logic)
+                let webhookUrl = null;
+                if (config.webhook && config.webhook.enabled && config.webhook.url && 
+                    config.webhook.url !== "https://hook.us1.make.com/your-webhook-url") {
+                    webhookUrl = config.webhook.url;
+                } else if (config.deploymentInfo && config.deploymentInfo.webhookUrl) {
+                    // Fallback to deploymentInfo.webhookUrl if webhook.url not configured
+                    webhookUrl = config.deploymentInfo.webhookUrl;
+                }
+                
+                if (webhookUrl && webhookUrl.trim() !== '') {
+                    fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload),
+                        mode: 'cors'
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log("Data successfully submitted to webhook");
+                        } else {
+                            console.error("Webhook submission failed:", response.status);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Webhook submission error:", err);
+                        // Still show success to user even if webhook fails
+                    });
+                } else {
+                    console.log("Webhook not configured, showing success modal");
+                }
+                
+                // Update spots counter
+                if (typeof config !== 'undefined' && config.event && config.event.spotsLeft > 0) {
+                    config.event.spotsLeft--;
+                    const navSpots = document.getElementById('nav-spots');
+                    if (navSpots) {
+                        navSpots.textContent = config.event.spotsLeft + " SPOTS";
+                    }
+                }
+            }
+
+            document.getElementById('modalCloseBtn').onclick = () => {
+                modal.classList.remove('visible');
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn && config.registration && config.registration.title) {
+                    submitBtn.textContent = config.registration.title.toUpperCase();
+                } else if (submitBtn && config.hero && config.hero.ctaText) {
+                    submitBtn.textContent = config.hero.ctaText.toUpperCase();
+                } else {
+                    submitBtn.textContent = "GENERATE TICKET";
+                }
+                submitBtn.style.backgroundColor = "black";
+                submitBtn.style.color = "white";
+                submitBtn.disabled = false;
+            };
+            renderQ(0);
+        }
+
+        // 3. ANIMATIONS
+        function initAnimations() {
+            const lenis = new Lenis({ duration: 1.2 });
+            function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+            requestAnimationFrame(raf);
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Preloader
+            const tl = gsap.timeline();
+            tl.to("#preloader-text", { y: 0, duration: 0.8, ease: "power4.out" })
+              .to("#preloader-bar", { width: "100%", duration: 1, ease: "power2.inOut" })
+              .to("#preloader", { yPercent: -100, duration: 0.8, ease: "power4.inOut", delay: 0.2 });
+
+            // Stacking Cards
+            gsap.utils.toArray('.stack-card').forEach((card, i) => {
+                gsap.to(card, {
+                    scale: 1 - (0.05 * (3 - i)),
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 150px",
+                        end: "bottom top",
+                        scrub: true
+                    }
+                });
+            });
+        }
+
+        // INIT
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForConfig(() => {
+                if (typeof config !== 'undefined' && config.settings && config.settings.primaryColor) {
+                document.documentElement.style.setProperty('--primary', config.settings.primaryColor);
+            }
+            injectContent();
+                hideEmptySections();
+            initLogic();
+            // Small delay to ensure DOM paint before animation calc
+            setTimeout(() => {
+                document.body.style.opacity = 1;
+                initAnimations();
+            }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE BLUEPRINT | GALLERY EDITION</title>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP & Lenis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- External Config -->
+    <script src="config.js"></script>
+
+    <!-- Fonts: Syne (Artistic) & Inter (Clean) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #050505;
+            --accent: #dc2626; /* Primary from config */
+            --gray: #f4f4f4;
+            --line: rgba(0,0,0,0.06);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        .font-display { font-family: 'Syne', sans-serif; }
+
+        /* SMOOTH SCROLL */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto; }
+
+        /* BACKGROUND GRID */
+        .grid-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: 50px 50px;
+            background-image: linear-gradient(to right, var(--line) 1px, transparent 1px),
+                              linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+            z-index: -1; pointer-events: none;
+        }
+
+        /* CUSTOM LENS CURSOR */
+        #cursor {
+            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
+            background: var(--text); border-radius: 50%; pointer-events: none;
+            z-index: 9999; mix-blend-mode: exclusion;
+            transition: transform 0.1s, width 0.3s, height 0.3s;
+        }
+        .cursor-text {
+            opacity: 0; color: white; font-size: 10px; font-weight: bold;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            white-space: nowrap;
+        }
+        body.hover-active #cursor {
+            width: 100px; height: 100px; background: white; mix-blend-mode: difference;
+        }
+        body.hover-active .cursor-text { opacity: 1; color: black; }
+
+        /* IMAGE TRAIL EFFECT */
+        .trail-img {
+            position: fixed; width: 200px; height: 250px; object-fit: cover;
+            pointer-events: none; opacity: 0; z-index: 40;
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+
+        /* CARD DECK STACK */
+        .deck-wrapper { position: relative; width: 100%; padding-bottom: 20vh; }
+        .deck-card {
+            position: sticky; top: 10vh; 
+            background: white; border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 1rem; overflow: hidden;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.05);
+            transform-origin: center top;
+        }
+
+        /* TYPOGRAPHY */
+        .giant-text { font-size: 14vw; line-height: 0.85; letter-spacing: -0.03em; }
+        .stroke-text { -webkit-text-stroke: 1px #000; color: transparent; }
+        
+        /* UTILS */
+        .input-gallery {
+            width: 100%; background: transparent; border: none; border-bottom: 1px solid #000;
+            padding: 1.5rem 0; font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700;
+            color: black; transition: 0.3s;
+        }
+        .input-gallery:focus { outline: none; border-color: var(--accent); padding-left: 1rem; }
+        .input-gallery::placeholder { color: #ccc; font-weight: 400; }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(255,255,255,0.95);
+            z-index: 10000; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: 0.5s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        
+        /* SPEAKER HOVER REVEAL */
+        .speaker-row:hover img { opacity: 1; transform: scale(1) rotate(2deg); }
+    </style>
+</head>
+<body>
+
+    <!-- LAYERS -->
+    <div class="grid-bg"></div>
+    <div id="cursor"><span class="cursor-text">VIEW</span></div>
+
+    <!-- PRELOADER -->
+    <div id="preloader" class="fixed inset-0 bg-white z-[100] flex flex-col justify-between p-10">
+        <div class="flex justify-between font-mono text-xs uppercase tracking-widest">
+            <span>Loading Assets</span>
+            <span id="loader-count">00</span>
+        </div>
+        <div class="text-center">
+            <div class="overflow-hidden">
+                <h1 class="font-display text-9xl translate-y-full transition-transform duration-1000 ease-out" id="loader-text">BLUEPRINT</h1>
+            </div>
+        </div>
+        <div class="w-full h-[1px] bg-gray-200 overflow-hidden">
+            <div class="h-full bg-[var(--accent)] w-0" id="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- NAV (Minimal Corners) -->
+    <nav class="fixed top-0 w-full p-8 z-50 mix-blend-difference text-white pointer-events-none">
+        <div class="flex justify-between items-start">
+            <div class="pointer-events-auto hover-trigger">
+                <span class="font-display font-bold text-2xl tracking-tighter" id="nav-title">EVENT.</span>
+            </div>
+            <div class="pointer-events-auto hover-trigger">
+                <a href="#register" class="font-mono text-xs font-bold uppercase border border-white px-4 py-2 rounded-full hover:bg-white hover:text-black transition-colors" id="nav-cta">
+                    Reserve
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 01. HERO (Kinetic) -->
+    <header class="relative min-h-screen flex flex-col justify-center px-6 md:px-20 pt-20">
+        <div class="relative z-10">
+            <div class="overflow-hidden mb-4">
+                <div class="flex items-center gap-4 translate-y-full hero-anim">
+                    <span class="w-3 h-3 bg-[var(--accent)] rounded-full"></span>
+                    <span class="font-mono text-xs uppercase tracking-widest" id="hero-badge">LOADING...</span>
+                </div>
+            </div>
+            
+            <h1 class="giant-text font-display font-bold uppercase">
+                <div class="overflow-hidden"><span class="block translate-y-full hero-anim" id="hero-line-1">THE</span></div>
+                <div class="overflow-hidden"><span class="block translate-y-full hero-anim text-[var(--accent)]" id="hero-line-2">BLUEPRINT</span></div>
+                <div class="overflow-hidden"><span class="block translate-y-full hero-anim stroke-text text-transparent" id="hero-line-3">SESSION</span></div>
+            </h1>
+
+            <div class="grid md:grid-cols-12 gap-12 mt-12 border-t border-black/10 pt-8 opacity-0 fade-anim">
+                <div class="md:col-span-4 font-mono text-xs space-y-2">
+                    <p id="hero-date"></p>
+                    <p id="hero-spots"></p>
+                </div>
+                <div class="md:col-span-6 md:col-start-7">
+                    <p class="text-xl md:text-2xl font-display font-medium leading-snug" id="hero-subtitle"></p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 02. CONTEXT (Image Trail) -->
+    <section class="py-32 px-6 md:px-20 bg-white relative z-10" id="trail-section">
+        <div class="border-b border-black mb-16 pb-4">
+            <span class="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">01 / The Context</span>
+        </div>
+        
+        <div class="cursor-default" id="problems-container">
+            <!-- Problems injected here -->
+        </div>
+        
+        <!-- Hidden images for trail -->
+        <div class="hidden">
+            <img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b91d?q=80&w=500" class="trail-source">
+            <img src="https://images.unsplash.com/photo-1518780664697-55e3ad937233?q=80&w=500" class="trail-source">
+            <img src="https://images.unsplash.com/photo-1448630360428-65456885c650?q=80&w=500" class="trail-source">
+        </div>
+    </section>
+
+    <!-- 03. CURRICULUM (Card Deck) -->
+    <section class="py-32 px-6 md:px-20 bg-[#f4f4f4]">
+        <div class="mb-32 text-center">
+            <span class="font-mono text-xs uppercase tracking-widest text-gray-400 mb-4 block">02 / The Curriculum</span>
+            <h2 class="font-display text-6xl md:text-8xl" id="benefits-title">THE DOWNLOAD</h2>
+        </div>
+
+        <div class="deck-wrapper max-w-5xl mx-auto" id="benefits-deck">
+            <!-- Cards injected here -->
+        </div>
+    </section>
+
+    <!-- 04. HOSTS (Fashion List) -->
+    <section class="py-32 px-6 md:px-20 bg-white">
+        <div class="border-b border-black mb-16 pb-4 flex justify-between items-end">
+            <span class="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">03 / The Architects</span>
+            <h2 class="font-display text-4xl" id="speakers-title">THE SQUAD</h2>
+        </div>
+
+        <div id="speakers-list">
+            <!-- List injected here -->
+        </div>
+    </section>
+
+    <!-- 05. COMPARISON (Slider) -->
+    <section class="py-32 px-6 md:px-20 bg-black text-white overflow-hidden">
+        <div class="grid md:grid-cols-2 gap-20">
+            <div>
+                <h3 class="font-display text-5xl mb-8 text-gray-500" id="comp-pain-title">OLD WAY</h3>
+                <ul class="space-y-6 font-mono text-sm text-gray-400" id="comp-pain-list"></ul>
+            </div>
+            <div>
+                <h3 class="font-display text-5xl mb-8 text-[var(--accent)]" id="comp-gain-title">NEW WAY</h3>
+                <ul class="space-y-6 font-mono text-sm text-white" id="comp-gain-list"></ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- 06. FAQ (Minimal) -->
+    <section class="py-32 px-6 md:px-20 bg-white">
+        <div class="max-w-3xl mx-auto">
+            <h2 class="font-display text-4xl mb-16 text-center" id="faq-title">LOGISTICS</h2>
+            <div id="faq-list">
+                <!-- FAQ injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 07. REGISTRATION (Gallery Form) -->
+    <section id="register" class="min-h-screen flex flex-col justify-center py-32 px-6 md:px-20 bg-[#fcfcfc] relative">
+        <div class="max-w-6xl mx-auto w-full grid md:grid-cols-2 gap-24">
+            
+            <div class="relative">
+                <div class="sticky top-32">
+                    <span class="font-mono text-xs font-bold text-[var(--accent)] uppercase tracking-widest mb-4 block">Final Step</span>
+                    <h2 class="font-display text-7xl md:text-8xl mb-8 leading-none" id="reg-title">SECURE<br>ACCESS</h2>
+                    <p class="text-gray-500 text-xl font-light max-w-md" id="reg-note"></p>
+                    
+                    <div class="mt-12 flex items-center gap-4">
+                        <div class="w-3 h-3 bg-[var(--accent)] rounded-full animate-pulse"></div>
+                        <span class="font-mono text-xs uppercase tracking-widest" id="reg-spots"></span>
+                    </div>
+                </div>
+            </div>
+
+            <form id="registrationForm" class="space-y-16 pt-12">
+                <div class="group">
+                    <label class="font-mono text-xs text-gray-400 uppercase block mb-2">01. Identification</label>
+                    <div class="grid grid-cols-2 gap-8">
+                        <input type="text" name="firstName" class="input-gallery" placeholder="First Name" required>
+                        <input type="text" name="lastName" class="input-gallery" placeholder="Last Name" required>
+                    </div>
+                </div>
+                
+                <div class="group">
+                    <label class="font-mono text-xs text-gray-400 uppercase block mb-2">02. Communication</label>
+                    <input type="email" name="email" class="input-gallery" placeholder="Email Address" required>
+                </div>
+
+                <div class="group">
+                    <label class="font-mono text-xs text-gray-400 uppercase block mb-2">03. Uplink</label>
+                    <input type="tel" name="phone" class="input-gallery" placeholder="Mobile Number" required>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-black text-white py-8 font-display text-2xl uppercase tracking-widest hover:bg-[var(--accent)] transition-colors duration-500 hover-trigger" data-cursor="SEND">
+                    Confirm Registration
+                </button>
+            </form>
+
+        </div>
+    </section>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="questionModalOverlay">
+        <div class="bg-white p-12 md:p-20 max-w-2xl w-full shadow-2xl relative">
+            <button id="modalCloseBtn" class="absolute top-8 right-8 text-2xl hover:text-[var(--accent)] transition-colors">✕</button>
+            <div id="modal-steps-container"></div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="py-12 px-6 md:px-20 border-t border-black/10 flex flex-col md:flex-row justify-between items-center text-xs uppercase font-mono tracking-widest text-gray-400">
+        <div id="footer-copy"></div>
+        <div class="flex flex-col items-end gap-1">
+        <div id="footer-brokerage"></div>
+            <div id="footer-address"></div>
+            <a href="#" id="footer-privacy" class="hover:text-[var(--accent)] transition-colors hidden">Privacy Policy</a>
+        </div>
+    </footer>
+
+    <!-- LOGIC -->
+    <script>
+        /**
+         * 0. CONFIG LOADING
+         */
+        function waitForConfig(callback) {
+            if (typeof config !== 'undefined') {
+                callback();
+            } else {
+                // Check if config.js failed to load
+                setTimeout(() => {
+                    if (typeof config === 'undefined') {
+                        console.error('Config.js failed to load! Please ensure config.js exists and is accessible.');
+                        // Show error message to user
+                        document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: monospace; padding: 2rem; text-align: center;"><div><h1 style="color: red; margin-bottom: 1rem;">Configuration Error</h1><p>config.js file not found or failed to load.</p><p style="margin-top: 1rem; color: #666;">Please ensure config.js exists in the same directory.</p></div></div>';
+                        return;
+                    }
+                    callback();
+                }, 100);
+            }
+        }
+
+        // SAFE INJECT
+        function inject(id, content, isHtml = false) {
+            const el = document.getElementById(id);
+            if(el) {
+                if(isHtml) el.innerHTML = content;
+                else el.textContent = content;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForConfig(() => {
+            // Override with primary color
+                if (typeof config !== 'undefined' && config.settings && config.settings.primaryColor) {
+                    document.documentElement.style.setProperty('--accent', config.settings.primaryColor);
+                }
+
+            document.title = config.meta.pageTitle;
+
+            // Nav
+            inject('nav-title', config.event.title);
+            inject('nav-cta', config.header.ctaText);
+
+            // Hero
+            inject('hero-badge', config.hero.badge);
+                
+                // Split headline from config.hero.headline
+                const headline = config.hero.headline || "Learn The A-Z Blueprint To Buying Your First Home";
+                // Remove HTML tags for splitting
+                const cleanHeadline = headline.replace(/<[^>]*>/g, '');
+                // Split into three parts - try to find natural breaks
+                const words = cleanHeadline.split(' ');
+                const part1 = words.slice(0, Math.ceil(words.length / 3)).join(' ').toUpperCase();
+                const part2 = words.slice(Math.ceil(words.length / 3), Math.ceil(words.length * 2 / 3)).join(' ').toUpperCase();
+                const part3 = words.slice(Math.ceil(words.length * 2 / 3)).join(' ').toUpperCase();
+                
+            const h1 = document.getElementById('hero-line-1');
+            const h2 = document.getElementById('hero-line-2');
+            const h3 = document.getElementById('hero-line-3');
+                if(h1) h1.innerHTML = part1 || "THE";
+                if(h2) h2.innerHTML = part2 || "BLUEPRINT";
+                if(h3) h3.innerHTML = part3 || "SESSION";
+            
+            inject('hero-subtitle', config.hero.subtitle, true);
+            inject('hero-date', config.event.date);
+            inject('hero-spots', config.event.spotsLeft + " SPOTS OPEN");
+
+            // Problems
+            // Add problems title if element exists
+            const problemsTitleEl = document.getElementById('problems-title');
+            if (problemsTitleEl && config.problems && config.problems.title) {
+                inject('problems-title', config.problems.title);
+            }
+            
+            inject('problems-container', config.problems.items.map((item, i) => `
+                <div class="py-8 border-b border-black/10 group hover-trigger" data-cursor="ISSUE 0${i+1}">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-display text-3xl md:text-5xl text-gray-300 group-hover:text-black transition-colors duration-500 uppercase">${item.replace(/<[^>]*>/g, '').substring(0, 30)}...</h3>
+                        <span class="font-mono text-xs text-[var(--accent)]">0${i+1}</span>
+                    </div>
+                    <p class="text-gray-500 mt-4 font-light max-w-xl opacity-0 group-hover:opacity-100 transition-opacity">${item}</p>
+                </div>
+            `).join(''), true);
+            
+            // Add success statement after problems if element exists
+            const successStatementEl = document.getElementById('success-statement');
+            if (successStatementEl && config.successStatement) {
+                inject('success-statement', config.successStatement, true);
+            }
+
+            // Benefits (Deck)
+            if(config.benefits) {
+                inject('benefits-title', config.benefits.title);
+                
+                // Add benefits subtitle if element exists
+                const benefitsSubtitleEl = document.getElementById('benefits-subtitle');
+                if (benefitsSubtitleEl && config.benefits.subtitle) {
+                    inject('benefits-subtitle', config.benefits.subtitle, true);
+                }
+                
+                if(config.benefits.items) {
+                    const deckHtml = config.benefits.items.map((item, i) => `
+                        <div class="deck-card p-12 bg-white border border-black/5 mb-12" style="top: ${15 + (i*10)}vh">
+                            <div class="flex justify-between items-start mb-8">
+                                <span class="font-mono text-xs text-[var(--accent)] uppercase tracking-widest">Module 0${i+1}</span>
+                                <span class="font-display text-4xl opacity-10">0${i+1}</span>
+                            </div>
+                            <h3 class="font-display text-5xl md:text-6xl mb-6 uppercase">${item.title}</h3>
+                            <p class="text-gray-600 text-lg font-light leading-relaxed">${item.description}</p>
+                        </div>
+                    `).join('');
+                    inject('benefits-deck', deckHtml, true);
+                }
+            }
+
+            // Speakers
+            if(config.speakers) {
+                inject('speakers-title', config.speakers.title);
+                
+                // Add speakers subtitle if element exists
+                const speakersSubtitleEl = document.getElementById('speakers-subtitle');
+                if (speakersSubtitleEl && config.speakers.subtitle) {
+                    inject('speakers-subtitle', config.speakers.subtitle, true);
+                }
+                
+                if(config.speakers.experts) {
+                    const speakerImages = [
+                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=500",
+                        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=500",
+                        "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=500",
+                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=500"
+                    ];
+                    
+                    const sHtml = config.speakers.experts.map((exp, i) => `
+                        <div class="speaker-row py-8 border-b border-black/10 flex justify-between items-center relative group hover-trigger" data-cursor="EXPERT">
+                            <div class="relative z-10">
+                                <h3 class="font-display text-4xl md:text-6xl group-hover:translate-x-4 transition-transform duration-500 uppercase">${exp.name}</h3>
+                                <p class="font-mono text-xs text-[var(--accent)] mt-2 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">${exp.title}</p>
+                            </div>
+                            <img src="${speakerImages[i % speakerImages.length]}" class="absolute right-20 top-1/2 -translate-y-1/2 w-48 h-64 object-cover opacity-0 transition-all duration-500 grayscale pointer-events-none z-20">
+                            <span class="text-xs font-mono opacity-30">0${i+1}</span>
+                        </div>
+                    `).join('');
+                    inject('speakers-list', sHtml, true);
+                }
+            }
+
+            // Comparison
+            if(config.comparison && config.comparison.painfulWay && config.comparison.expressWay) {
+                inject('comp-pain-title', config.comparison.painfulWay.title);
+                inject('comp-pain-list', config.comparison.painfulWay.points.map(p => `<li>✕ ${p}</li>`).join(''), true);
+                
+                inject('comp-gain-title', config.comparison.expressWay.title);
+                inject('comp-gain-list', config.comparison.expressWay.points.map(p => `<li>✦ ${p}</li>`).join(''), true);
+            }
+
+            // FAQ
+            if(config.faq) {
+                inject('faq-title', config.faq.title);
+                
+                // Add FAQ subtitle if element exists
+                const faqSubtitleEl = document.getElementById('faq-subtitle');
+                if (faqSubtitleEl && config.faq.subtitle) {
+                    inject('faq-subtitle', config.faq.subtitle, true);
+                }
+                
+                if(config.faq.questions) {
+                    const fHtml = config.faq.questions.map(q => `
+                        <div class="faq-item border-b border-gray-200 py-6 cursor-pointer group hover-trigger">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-display text-xl group-hover:text-[var(--accent)] transition-colors">${q.question}</h3>
+                                <span class="text-2xl font-light group-hover:rotate-45 transition-transform">+</span>
+                            </div>
+                            <div class="h-0 overflow-hidden transition-all duration-500 faq-content">
+                                <p class="pt-6 text-gray-500 font-light leading-relaxed">${q.answer}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                    inject('faq-list', fHtml, true);
+                }
+            }
+
+            // Register
+            inject('reg-title', config.registration.title);
+            inject('reg-note', config.registration.note);
+            inject('reg-spots', config.registration.urgency, true); // HTML allowed for strikethrough
+            
+            // Form submit button
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn && config.registration && config.registration.title) {
+                submitBtn.textContent = config.registration.title.toUpperCase();
+            } else if (submitBtn && config.hero && config.hero.ctaText) {
+                submitBtn.textContent = config.hero.ctaText.toUpperCase();
+            }
+            
+            // Footer
+            inject('footer-copy', config.footer.copyright);
+            inject('footer-brokerage', config.footer.brokerage);
+
+            // Footer address
+            const footerAddress = document.getElementById('footer-address');
+            if (footerAddress && config.footer && config.footer.address) {
+                inject('footer-address', config.footer.address);
+            }
+            
+            // Privacy policy link
+            const footerPrivacy = document.getElementById('footer-privacy');
+            if (footerPrivacy && config.footer && config.footer.privacyPolicy) {
+                footerPrivacy.classList.remove('hidden');
+                footerPrivacy.href = config.footer.privacyPolicy;
+            }
+
+            // Update preloader text with event title
+            if (config.event && config.event.title) {
+                const loaderText = document.getElementById('loader-text');
+                if (loaderText) {
+                    loaderText.textContent = config.event.title.toUpperCase();
+                }
+            }
+
+            hideEmptySections();
+            initLogic();
+            setTimeout(initAnimations, 100);
+            });
+        });
+
+        // Hide sections when config data is missing
+        function hideEmptySections() {
+            // Problems section
+            if (!config.problems || !config.problems.items || config.problems.items.length === 0) {
+                const problemsSection = document.querySelector('#problems-container')?.closest('section');
+                if (problemsSection) problemsSection.style.display = 'none';
+            }
+
+            // Benefits section
+            if (!config.benefits || !config.benefits.items || config.benefits.items.length === 0) {
+                const benefitsSection = document.querySelector('#benefits-deck')?.closest('section');
+                if (benefitsSection) benefitsSection.style.display = 'none';
+            }
+
+            // Comparison section
+            if (!config.comparison || (!config.comparison.painfulWay && !config.comparison.expressWay)) {
+                const comparisonSection = document.querySelector('#comp-pain-title')?.closest('section');
+                if (comparisonSection) comparisonSection.style.display = 'none';
+            }
+
+            // Speakers section
+            if (!config.speakers || !config.speakers.experts || config.speakers.experts.length === 0) {
+                const speakersSection = document.querySelector('#speakers-list')?.closest('section');
+                if (speakersSection) speakersSection.style.display = 'none';
+            }
+
+            // FAQ section
+            if (!config.faq || !config.faq.questions || config.faq.questions.length === 0) {
+                const faqSection = document.querySelector('#faq-list')?.closest('section');
+                if (faqSection) faqSection.style.display = 'none';
+            }
+        }
+
+        // 2. LOGIC
+        function initLogic() {
+            // Cursor
+            const cursor = document.getElementById('cursor');
+            const cursorText = document.querySelector('.cursor-text');
+            
+            document.addEventListener('mousemove', e => {
+                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1, ease: "power2.out" });
+            });
+
+            document.querySelectorAll('.hover-trigger').forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    document.body.classList.add('hover-active');
+                    if(el.dataset.cursor) cursorText.textContent = el.dataset.cursor;
+                });
+                el.addEventListener('mouseleave', () => {
+                    document.body.classList.remove('hover-active');
+                    cursorText.textContent = "VIEW";
+                });
+            });
+
+            // Image Trail
+            const section = document.getElementById('trail-section');
+            const images = document.querySelectorAll('.trail-source');
+            let zIndex = 100;
+            
+            section.addEventListener('mousemove', (e) => {
+                if(Math.random() < 0.1) { // Throttling
+                    const img = images[Math.floor(Math.random() * images.length)].cloneNode();
+                    img.className = 'trail-img';
+                    img.style.left = e.clientX + 'px';
+                    img.style.top = e.clientY + 'px';
+                    img.style.zIndex = zIndex++;
+                    document.body.appendChild(img);
+                    
+                    gsap.to(img, { opacity: 1, scale: 1, duration: 0.3 });
+                    gsap.to(img, { opacity: 0, scale: 0.5, duration: 0.5, delay: 0.5, onComplete: () => img.remove() });
+                }
+            });
+
+            // FAQ
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const content = item.querySelector('.faq-content');
+                    content.style.height = content.style.height ? null : content.scrollHeight + "px";
+                });
+            });
+
+            // Form
+            const form = document.getElementById('registrationForm');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('submitBtn');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+                
+                btn.textContent = "Processing...";
+                btn.style.opacity = 0.7;
+                
+                setTimeout(() => showModal(data), 800);
+            });
+        }
+
+        function showModal(data) {
+            const modal = document.getElementById('questionModalOverlay');
+            const container = document.getElementById('modal-steps-container');
+            const answers = [];
+            modal.classList.add('active');
+
+            function renderQ(idx) {
+                container.innerHTML = '';
+                if(idx >= config.modalQuestions.length) {
+                    finish();
+                    return;
+                }
+                const q = config.modalQuestions[idx];
+                const div = document.createElement('div');
+                div.innerHTML = `<h3 class="font-display text-3xl mb-10 leading-tight">${q.questionText}</h3>`;
+                
+                q.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-6 mb-4 border border-gray-200 hover:border-black hover:bg-black hover:text-white transition-all font-mono text-xs uppercase tracking-widest";
+                    btn.textContent = opt.text;
+                    btn.onclick = () => {
+                        // Store answer with questionId and proper format
+                        answers.push({ 
+                            questionId: q.id,
+                            question: q.questionText, 
+                            answerValue: opt.value,
+                            answerText: opt.text
+                        });
+                        renderQ(idx + 1);
+                    };
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            }
+
+            function finish() {
+                container.innerHTML = `
+                    <div class="text-center py-16">
+                        <h2 class="font-display text-5xl mb-6">CONFIRMED</h2>
+                        <p class="font-mono text-xs text-gray-500 uppercase tracking-widest">Ticket sent to: ${data.email}</p>
+                    </div>
+                `;
+                
+                // Get primary agent email from contact section
+                const primaryAgentEmail = config.contact?.agents?.[0]?.email || "";
+                
+                // Combine form data with question answers - match v4.html payload structure
+                const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+                
+                // Map answers to match v4.html format: { question, answer } where answer is the text, not value
+                const mappedQuestions = answers.map(ans => {
+                    return {
+                        question: ans.question || ans.questionText,
+                        answer: ans.answerText || ans.answerValue
+                    };
+                });
+
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    source: "landing-page",
+                    name: fullName,
+                    firstName: data.firstName || '',
+                    lastName: data.lastName || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    submittedAt: new Date().toISOString(),
+                    eventName: config.event?.title || "First Time Buyer Blueprint",
+                    agentEmail: primaryAgentEmail,
+                    questions: mappedQuestions,
+                    // Deployment info fields for form submissions
+                    tag: config.deploymentInfo?.tag || "",
+                    ghlWebhookUrl: config.deploymentInfo?.ghlWebhookUrl || "",
+                    webhookUrl: config.deploymentInfo?.webhookUrl || "",
+                    facebookPixelId: config.deploymentInfo?.facebookPixelId || "",
+                    followUpBossEmail: config.deploymentInfo?.followUpBossEmail || ""
+                };
+                
+                console.log("Submitting Payload:", payload);
+                
+                // Submit to webhook if configured - use config.webhook.url (matching v4.html logic)
+                let webhookUrl = null;
+                if (config.webhook && config.webhook.enabled && config.webhook.url && 
+                    config.webhook.url !== "https://hook.us1.make.com/your-webhook-url") {
+                    webhookUrl = config.webhook.url;
+                } else if (config.deploymentInfo && config.deploymentInfo.webhookUrl) {
+                    // Fallback to deploymentInfo.webhookUrl if webhook.url not configured
+                    webhookUrl = config.deploymentInfo.webhookUrl;
+                }
+                
+                if (webhookUrl && webhookUrl.trim() !== '') {
+                    fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload),
+                        mode: 'cors'
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log("Data successfully submitted to webhook");
+                        } else {
+                            console.error("Webhook submission failed:", response.status);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Webhook submission error:", err);
+                        // Still show success to user even if webhook fails
+                    });
+                } else {
+                    console.log("Webhook not configured, showing success modal");
+                }
+                
+                // Update spots counter
+                if (typeof config !== 'undefined' && config.event && config.event.spotsLeft > 0) {
+                    config.event.spotsLeft--;
+                    const heroSpots = document.getElementById('hero-spots');
+                    if (heroSpots) {
+                        heroSpots.textContent = config.event.spotsLeft + " SPOTS OPEN";
+                    }
+                    
+                    // Update registration spots if element exists
+                    const regSpots = document.getElementById('reg-spots');
+                    if (regSpots && config.registration && config.registration.urgency) {
+                        // Update spots in the urgency string
+                        const updatedUrgency = config.registration.urgency.replace(/\d+/, config.event.spotsLeft);
+                        inject('reg-spots', updatedUrgency, true);
+                    }
+                }
+            }
+
+            document.getElementById('modalCloseBtn').onclick = () => {
+                modal.classList.remove('active');
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn && config.registration && config.registration.title) {
+                    submitBtn.textContent = config.registration.title.toUpperCase();
+                } else if (submitBtn && config.hero && config.hero.ctaText) {
+                    submitBtn.textContent = config.hero.ctaText.toUpperCase();
+                } else {
+                    submitBtn.textContent = "Confirm Registration";
+                }
+                submitBtn.style.opacity = 1;
+            };
+            renderQ(0);
+        }
+
+        // 3. ANIMATIONS
+        function initAnimations() {
+            const lenis = new Lenis({ duration: 1.2 });
+            function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+            requestAnimationFrame(raf);
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Preloader
+            const tl = gsap.timeline();
+            let count = { val: 0 };
+            gsap.to(count, { val: 100, duration: 1.5, onUpdate: () => document.getElementById('loader-count').innerText = Math.floor(count.val) });
+            
+            tl.to("#loader-bar", { width: "100%", duration: 1.5, ease: "power2.inOut" })
+              .to("#loader-text", { y: 0, duration: 1, ease: "power4.out" }, "-=1")
+              .to("#preloader", { yPercent: -100, duration: 1, ease: "power4.inOut", delay: 0.2 });
+
+            // Hero Text
+            gsap.to(".hero-anim", {
+                y: 0, duration: 1.2, stagger: 0.1, ease: "power4.out", delay: 2
+            });
+            
+            gsap.to(".fade-anim", {
+                opacity: 1, duration: 1, delay: 2.5
+            });
+
+            // Deck Stacking
+            gsap.utils.toArray('.deck-card').forEach((card, i) => {
+                gsap.to(card, {
+                    scale: 1 - (0.05 * (3 - i)),
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 15%",
+                        end: "bottom top",
+                        scrub: true
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>

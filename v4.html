@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP & Plugins -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/CustomEase.min.js"></script>
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- Fonts: Italiana (Display) & Manrope (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Manrope:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- External Config -->
+    <script src="config.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #F3F2ED; /* Warm Alabaster */
+            --text-color: #1a1a1a; /* Soft Charcoal */
+            --accent-color: #A8A192; /* Stone */
+            --dark-bg: #111111;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Manrope', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+            opacity: 0; /* For preloader fade in */
+        }
+
+        .font-display { font-family: 'Italiana', serif; }
+        
+        /* PRELOADER */
+        .preloader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #050505; z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            color: #fff;
+        }
+
+        /* GRAIN & NOISE */
+        .grain {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9000; opacity: 0.04;
+            background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+        }
+
+        /* CURSOR */
+        .cursor-dot {
+            position: fixed; top: 0; left: 0; width: 6px; height: 6px;
+            background-color: var(--text-color); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 9999;
+            transition: background-color 0.3s;
+        }
+        .cursor-outline {
+            position: fixed; top: 0; left: 0; width: 40px; height: 40px;
+            border: 1px solid rgba(26, 26, 26, 0.3); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 9998;
+            transition: width 0.2s, height 0.2s, background-color 0.2s, border-color 0.3s;
+        }
+        body.hover-active .cursor-outline {
+            width: 80px; height: 80px; background-color: rgba(255,255,255,0.1);
+            backdrop-filter: blur(2px); border-color: transparent;
+        }
+
+        /* HOVER REVEAL IMAGE */
+        .hover-reveal-img {
+            position: fixed; width: 350px; height: 450px;
+            top: 0; left: 0; pointer-events: none; opacity: 0; z-index: 50;
+            transform: translate(-50%, -50%) scale(0.8);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            background-size: cover; background-position: center;
+        }
+
+        /* TEXT UTILS */
+        .highlight { font-style: italic; color: #7e786d; }
+        .strikethrough { text-decoration: line-through; opacity: 0.4; }
+
+        /* HORIZONTAL SCROLL */
+        .h-scroll-container {
+            width: 100%; height: 100vh; overflow: hidden;
+            display: flex;
+        }
+        .h-scroll-wrapper {
+            display: flex; flex-wrap: nowrap; height: 100%;
+        }
+        .h-scroll-panel {
+            width: 100vw; height: 100%; flex-shrink: 0;
+            display: flex; justify-content: center; align-items: center;
+            position: relative;
+        }
+
+        /* FORM INPUTS */
+        .editorial-input {
+            background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,0.2);
+            width: 100%; padding: 1rem 0; font-family: 'Italiana', serif; font-size: 1.5rem;
+            color: var(--text-color); transition: border-color 0.3s;
+        }
+        .editorial-input:focus { outline: none; border-bottom: 1px solid var(--text-color); }
+        .editorial-input::placeholder { 
+            font-family: 'Manrope', sans-serif; font-size: 0.8rem; 
+            text-transform: uppercase; letter-spacing: 0.2em; color: #aaa; 
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(243, 242, 237, 0.98); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-option-btn {
+            display: block; width: 100%; text-align: left; padding: 1.5rem 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1); font-family: 'Italiana', serif;
+            font-size: 1.5rem; color: var(--text-color); opacity: 0.5;
+            transition: all 0.3s;
+        }
+        .modal-option-btn:hover { opacity: 1; padding-left: 1rem; border-color: var(--text-color); }
+
+        /* UTILS */
+        .split-line { overflow: hidden; }
+        .split-line span { display: block; transform: translateY(100%); }
+    </style>
+</head>
+<body>
+
+    <!-- PRELOADER -->
+    <div class="preloader">
+        <div class="text-center">
+            <div class="overflow-hidden">
+                <span class="font-display text-5xl md:text-7xl tracking-widest italic block translate-y-full" id="preloader-text">Blueprint</span>
+            </div>
+            <div class="mt-6 h-[1px] w-0 bg-white mx-auto" id="loader-line"></div>
+        </div>
+    </div>
+
+    <!-- UI LAYERS -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+    <div class="grain"></div>
+    <div class="hover-reveal-img" id="reveal-image"></div>
+
+    <!-- NAV -->
+    <nav class="fixed top-0 left-0 w-full px-8 py-8 flex justify-between items-center z-40 mix-blend-difference text-white">
+        <a href="#" class="font-display text-2xl tracking-widest hover-trigger" id="nav-logo">BLUEPRINT</a>
+        <div class="hidden md:flex gap-8 text-xs tracking-[0.2em] uppercase font-light opacity-0 nav-fade">
+            <span id="nav-date"></span>
+            <span>•</span>
+            <span id="nav-status"></span>
+        </div>
+        <a href="#reserve" class="uppercase text-xs tracking-[0.2em] border-b border-transparent hover:border-white transition-colors hover-trigger opacity-0 nav-fade" id="nav-cta"></a>
+    </nav>
+
+    <!-- HERO -->
+    <header class="relative min-h-screen flex flex-col justify-center px-6 md:px-20 pt-20 overflow-hidden">
+        <div class="absolute top-0 right-0 w-full md:w-[60%] h-full bg-cover bg-center opacity-80 parallax-bg" 
+             style="background-image: url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=2400&auto=format&fit=crop'); clip-path: inset(0 0 0 0);">
+        </div>
+
+        <div class="relative z-10 max-w-5xl">
+            <p class="text-xs md:text-sm tracking-[0.4em] uppercase text-gray-500 mb-8 split-line"><span id="hero-badge"></span></p>
+            
+            <h1 class="font-display text-6xl md:text-8xl lg:text-9xl leading-[0.95]" id="hero-headline">
+                <!-- JS Injected -->
+            </h1>
+
+            <div class="mt-12 md:mt-20 flex flex-col md:flex-row gap-12 items-start">
+                <div class="max-w-md split-line">
+                    <span class="font-light text-gray-600 leading-relaxed block" id="hero-subtitle"></span>
+                </div>
+                
+                <a href="#reserve" class="group flex items-center gap-4 hover-trigger split-line">
+                    <span class="flex items-center gap-4">
+                        <div class="w-12 h-12 border border-black rounded-full flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors duration-500">
+                            <i class="fa-solid fa-arrow-down transform -rotate-45 group-hover:rotate-0 transition-transform duration-500"></i>
+                        </div>
+                        <span class="uppercase tracking-[0.2em] text-xs" id="hero-cta"></span>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- SECTION: THE CONTEXT (PROBLEMS) -->
+    <section class="py-32 px-6 md:px-20 relative">
+        <div class="grid md:grid-cols-12 gap-12 items-start">
+            <div class="md:col-span-4 sticky top-32">
+                <span class="text-xs uppercase tracking-[0.2em] text-gray-400 mb-4 block">01 — The Context</span>
+                <h2 class="font-display text-5xl md:text-6xl leading-tight" id="problems-title"></h2>
+            </div>
+            
+            <div class="md:col-span-7 md:col-start-6 space-y-12" id="problems-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION: MUSEUM SCROLL (BENEFITS) -->
+    <section id="museum-scroll" class="h-screen bg-[#111] text-[#F3F2ED] relative overflow-hidden flex items-center">
+        <div class="absolute top-8 left-8 z-10">
+            <h2 class="font-display text-3xl" id="benefits-title"></h2>
+            <p class="text-xs uppercase tracking-widest text-gray-500 mt-2">The Curriculum</p>
+        </div>
+        
+        <div class="h-scroll-container">
+            <div class="h-scroll-wrapper" id="benefits-track">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION: THE DICHOTOMY (COMPARISON) -->
+    <section class="relative w-full">
+        <div class="grid md:grid-cols-2 min-h-screen">
+            <!-- Left: Pain -->
+            <div class="bg-[#EBE9E1] p-12 md:p-24 flex flex-col justify-center border-r border-black/5">
+                <span class="text-xs uppercase tracking-widest text-gray-400 mb-6 block">The Old Way</span>
+                <h3 class="font-display text-4xl md:text-5xl mb-12" id="comp-pain-title"></h3>
+                <ul class="space-y-8 font-light text-gray-600" id="comp-pain-list"></ul>
+            </div>
+
+            <!-- Right: Gain -->
+            <div class="bg-[#F3F2ED] p-12 md:p-24 flex flex-col justify-center relative overflow-hidden group">
+                <div class="absolute inset-0 bg-[#E5E2D9] transform scale-y-0 origin-bottom transition-transform duration-700 group-hover:scale-y-100"></div>
+                <div class="relative z-10">
+                    <span class="text-xs uppercase tracking-widest text-gray-400 mb-6 block">The Blueprint</span>
+                    <h3 class="font-display text-4xl md:text-5xl mb-12" id="comp-gain-title"></h3>
+                    <ul class="space-y-8 font-medium text-gray-800" id="comp-gain-list"></ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION: CINEMA MENU (SOLUTIONS) -->
+    <section class="py-32 bg-[#0A0A0A] text-[#F3F2ED] relative cursor-none-area">
+        <div class="px-6 md:px-20">
+            <div class="mb-20 border-b border-white/10 pb-8">
+                <span class="text-xs uppercase tracking-widest text-gray-500">04 — The Strategy</span>
+                <h2 class="font-display text-5xl md:text-6xl mt-4" id="solutions-title"></h2>
+            </div>
+
+            <div id="solutions-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION: THE COUNCIL (SPEAKERS) -->
+    <section class="py-32 px-6 md:px-20">
+        <div class="mb-20 text-center">
+            <span class="text-xs uppercase tracking-widest text-gray-400">05 — The Council</span>
+            <h2 class="font-display text-5xl md:text-7xl mt-4" id="speakers-title"></h2>
+            <p class="text-gray-500 mt-4 font-light" id="speakers-subtitle"></p>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8" id="speakers-grid">
+            <!-- JS Injected -->
+        </div>
+    </section>
+
+    <!-- SECTION: FAQ -->
+    <section class="py-32 px-6 md:px-20 bg-white border-t border-black/5">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="font-display text-4xl mb-16 text-center" id="faq-title"></h2>
+            <div class="space-y-0" id="faq-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION: RSVP -->
+    <section id="reserve" class="min-h-screen flex flex-col justify-center py-20 px-6 md:px-20 bg-[#EBE9E1] relative">
+        <div class="max-w-3xl mx-auto w-full">
+            <span class="text-xs uppercase tracking-[0.3em] text-gray-400 block mb-6">Final Call</span>
+            <h2 class="font-display text-6xl md:text-8xl mb-6" id="reg-title"></h2>
+            <div class="flex items-center gap-4 text-xs uppercase tracking-widest text-gray-400 mb-12">
+                <div class="w-2 h-2 bg-green-700 rounded-full animate-pulse"></div>
+                <span id="reg-spots"></span>
+            </div>
+
+            <form id="registrationForm" class="space-y-12">
+                <div class="grid grid-cols-2 gap-8">
+                    <div class="group">
+                        <input type="text" name="firstName" class="editorial-input" placeholder="First Name" required>
+                    </div>
+                    <div class="group">
+                        <input type="text" name="lastName" class="editorial-input" placeholder="Last Name" required>
+                    </div>
+                </div>
+                
+                <div class="group">
+                    <input type="email" name="email" class="editorial-input" placeholder="Email Address" required>
+                </div>
+
+                <div class="group">
+                    <input type="tel" name="phone" class="editorial-input" placeholder="Phone Number" required>
+                </div>
+
+                <div class="pt-12">
+                    <button type="submit" class="w-full py-6 border border-black text-black text-xs uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all duration-500 hover-trigger" id="submitBtn">
+                        Confirm Attendance
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <footer class="absolute bottom-6 w-full left-0 text-center px-6">
+            <div class="flex justify-between items-center border-t border-black/10 pt-6 max-w-7xl mx-auto">
+                <span class="text-[10px] uppercase tracking-widest text-gray-400" id="footer-copyright"></span>
+                <div class="flex flex-col items-end gap-1">
+                    <span class="text-[10px] uppercase tracking-widest text-gray-400" id="footer-brokerage"></span>
+                    <span class="text-[10px] uppercase tracking-widest text-gray-400" id="footer-address"></span>
+                    <a href="#" id="footer-privacy" class="text-[10px] uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors">Privacy Policy</a>
+                </div>
+            </div>
+        </footer>
+    </section>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="questionModalOverlay">
+        <div class="modal-content text-center p-8 md:p-16 border border-black/10 bg-[#F3F2ED]">
+            <button id="modalCloseBtn" class="absolute top-6 right-6 text-2xl hover:text-[#999] transition-colors">✕</button>
+            <div id="modal-steps-container"></div>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        /**
+         * 0. CONFIG LOADING
+         */
+        function waitForConfig(callback) {
+            if (typeof config !== 'undefined') {
+                callback();
+            } else {
+                // Check if config.js failed to load
+                setTimeout(() => {
+                    if (typeof config === 'undefined') {
+                        console.error('Config.js failed to load! Please ensure config.js exists and is accessible.');
+                        // Show error message to user
+                        document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: monospace; padding: 2rem; text-align: center;"><div><h1 style="color: red; margin-bottom: 1rem;">Configuration Error</h1><p>config.js file not found or failed to load.</p><p style="margin-top: 1rem; color: #666;">Please ensure config.js exists in the same directory.</p></div></div>';
+                        return;
+                    }
+                    callback();
+                }, 100);
+            }
+        }
+
+        // 1. INJECT CONTENT
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForConfig(() => {
+                injectContent();
+                
+                // Allow DOM to settle
+                setTimeout(() => {
+                    document.body.style.opacity = 1;
+                    initLogic();
+                    initAnimations();
+                }, 100);
+            });
+        });
+
+        function injectContent() {
+            if (typeof config === 'undefined') {
+                console.error('Config not loaded');
+                return;
+            }
+            
+            document.title = config.meta.pageTitle;
+            
+            // Nav
+            // nav-logo: Keep stylized "ESTATE." as design choice, or use config.event.title if preferred
+            document.getElementById('nav-logo').textContent = config.event.title || "ESTATE.";
+            document.getElementById('nav-date').textContent = config.event.date || config.header.eventDate || "";
+            // nav-status: Use spots available from config
+            if (config.header && config.header.spotsAvailable) {
+                document.getElementById('nav-status').innerHTML = config.header.spotsAvailable;
+            } else {
+                document.getElementById('nav-status').textContent = "Registration Open";
+            }
+            // nav-cta: Use config.header.ctaText
+            if (config.header && config.header.ctaText) {
+                document.getElementById('nav-cta').textContent = config.header.ctaText;
+            } else {
+                document.getElementById('nav-cta').textContent = "Inquire";
+            }
+
+            // Hero
+            document.getElementById('hero-badge').textContent = config.hero.badge;
+            document.getElementById('hero-headline').innerHTML = config.hero.headline;
+            document.getElementById('hero-subtitle').innerHTML = config.hero.subtitle;
+            document.getElementById('hero-cta').textContent = config.hero.ctaText;
+
+            // Problems (Context)
+            if(config.problems && config.problems.items && config.problems.items.length > 0) {
+                document.getElementById('problems-title').textContent = config.problems.title;
+                document.getElementById('problems-list').innerHTML = config.problems.items.map((item, i) => `
+                    <div class="border-t border-black/10 py-8 group hover-trigger">
+                        <div class="flex justify-between items-baseline">
+                            <p class="text-xl font-light leading-relaxed group-hover:translate-x-4 transition-transform duration-500">${item}</p>
+                            <span class="text-xs font-bold opacity-20">0${i+1}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Benefits (Museum Scroll)
+            if(config.benefits && config.benefits.items && config.benefits.items.length > 0) {
+                document.getElementById('benefits-title').textContent = config.benefits.title;
+                // High-end abstract images
+                const abstractImages = [
+                    "https://images.unsplash.com/photo-1507646227500-4d3893002d2b?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1465326117523-6450112b60b2?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1533319417894-6fbb331e5513?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1515169067759-159a959e3f75?q=80&w=1000&auto=format&fit=crop"
+                ];
+                
+                document.getElementById('benefits-track').innerHTML = config.benefits.items.map((item, i) => `
+                    <div class="h-scroll-panel group">
+                        <div class="w-[80vw] md:w-[60vw] h-[70vh] relative overflow-hidden border border-white/10 bg-[#1a1a1a]">
+                            <div class="absolute inset-0 opacity-40 mix-blend-overlay">
+                                <img src="${abstractImages[i]}" class="w-full h-full object-cover grayscale">
+                            </div>
+                            <div class="absolute bottom-0 left-0 p-12 md:p-20">
+                                <span class="text-xs uppercase tracking-[0.2em] text-gray-400 mb-4 block">Phase 0${i+1}</span>
+                                <h3 class="font-display text-5xl md:text-7xl mb-6">${item.title}</h3>
+                                <p class="text-lg font-light text-gray-400 max-w-lg">${item.description}</p>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Comparison
+            if(config.comparison && config.comparison.painfulWay && config.comparison.expressWay) {
+                document.getElementById('comp-pain-title').textContent = config.comparison.painfulWay.title;
+                if(config.comparison.painfulWay.points) {
+                    document.getElementById('comp-pain-list').innerHTML = config.comparison.painfulWay.points.map(p => 
+                        `<li class="flex gap-6 items-start group hover-trigger"><span class="text-xs mt-1 opacity-30 group-hover:text-red-500 transition-colors">✕</span> <span>${p}</span></li>`
+                    ).join('');
+                }
+
+                document.getElementById('comp-gain-title').textContent = config.comparison.expressWay.title;
+                if(config.comparison.expressWay.points) {
+                    document.getElementById('comp-gain-list').innerHTML = config.comparison.expressWay.points.map(p => 
+                        `<li class="flex gap-6 items-start group hover-trigger"><span class="text-xs mt-1 opacity-30 group-hover:text-green-600 transition-colors">●</span> <span>${p}</span></li>`
+                    ).join('');
+                }
+            }
+
+            // Solutions (Cinema Menu)
+            if(config.solutions && config.solutions.items && config.solutions.items.length > 0) {
+                document.getElementById('solutions-title').textContent = config.solutions.title;
+                const solutionImages = [
+                    "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1600573472550-8090b5e0745e?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1600607687644-c7171b42498f?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=1000&auto=format&fit=crop"
+                ];
+                document.getElementById('solutions-list').innerHTML = config.solutions.items.map((item, i) => `
+                    <div class="menu-item group relative border-b border-white/10 py-12 hover:border-white transition-colors duration-500 hover-trigger" 
+                         data-img="${solutionImages[i]}">
+                        <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                            <div class="max-w-2xl">
+                                <span class="text-xs text-gray-500 mb-2 block">0${i+1}</span>
+                                <div class="font-light text-xl md:text-2xl text-gray-400 group-hover:text-white transition-colors duration-500">${item}</div>
+                            </div>
+                            <span class="hidden md:block text-xs uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-500">Explore</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Speakers
+            if(config.speakers && config.speakers.experts && config.speakers.experts.length > 0) {
+                document.getElementById('speakers-title').textContent = config.speakers.title;
+                document.getElementById('speakers-subtitle').innerHTML = config.speakers.subtitle;
+                const speakerImgs = [
+                    "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=500&q=80",
+                    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=500&q=80",
+                    "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=500&q=80",
+                    "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=500&q=80"
+                ];
+                document.getElementById('speakers-grid').innerHTML = config.speakers.experts.map((exp, i) => `
+                    <div class="group hover-trigger">
+                        <div class="h-[400px] w-full overflow-hidden mb-6 bg-gray-200 relative">
+                             <img src="${speakerImgs[i]}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 transform group-hover:scale-105">
+                        </div>
+                        <h3 class="font-display text-2xl mb-1">${exp.name}</h3>
+                        <p class="text-xs uppercase tracking-widest text-[#928D82] mb-3">${exp.title}</p>
+                        <p class="text-sm text-gray-500 font-light leading-relaxed">${exp.description}</p>
+                    </div>
+                `).join('');
+            }
+
+            // FAQ
+            if(config.faq && config.faq.questions && config.faq.questions.length > 0) {
+                document.getElementById('faq-title').textContent = config.faq.title;
+                document.getElementById('faq-list').innerHTML = config.faq.questions.map(q => `
+                    <div class="border-b border-black/10 py-8 hover-trigger group">
+                        <div class="flex justify-between items-center cursor-pointer">
+                            <h3 class="font-display text-xl text-gray-800 group-hover:translate-x-2 transition-transform duration-300">${q.question}</h3>
+                            <span class="text-xs opacity-30">+</span>
+                        </div>
+                        <div class="h-0 overflow-hidden transition-all duration-500 group-hover:h-auto group-hover:mt-4">
+                            <p class="text-gray-500 font-light max-w-2xl">${q.answer}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Registration
+            document.getElementById('reg-title').textContent = config.registration.title || "Claim Your Spot";
+            document.getElementById('reg-spots').textContent = config.event.spotsLeft + " Seats Remaining";
+            
+            // Add registration urgency if element exists
+            const regUrgency = document.getElementById('reg-urgency');
+            if (regUrgency && config.registration && config.registration.urgency) {
+                regUrgency.innerHTML = config.registration.urgency;
+            }
+            
+            // Add registration note if element exists
+            const regNote = document.getElementById('reg-note');
+            if (regNote && config.registration && config.registration.note) {
+                regNote.textContent = config.registration.note;
+            }
+            
+            // Form submit button
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn && config.registration && config.registration.title) {
+                submitBtn.textContent = config.registration.title;
+            }
+            
+            // Footer
+            document.getElementById('footer-copyright').textContent = config.footer.copyright || '';
+            document.getElementById('footer-brokerage').textContent = config.footer.brokerage || '';
+            
+            // Footer address
+            const footerAddress = document.getElementById('footer-address');
+            if (footerAddress && config.footer && config.footer.address) {
+                footerAddress.textContent = config.footer.address;
+            }
+            
+            // Privacy policy link
+            const footerPrivacy = document.getElementById('footer-privacy');
+            if (footerPrivacy && config.footer && config.footer.privacyPolicy) {
+                footerPrivacy.href = config.footer.privacyPolicy;
+            }
+
+            // Update preloader text with event title
+            if (config.event && config.event.title) {
+                const preloaderText = document.getElementById('preloader-text');
+                if (preloaderText) {
+                    preloaderText.textContent = config.event.title;
+                }
+            }
+
+            hideEmptySections();
+        }
+
+        function hideEmptySections() {
+            // Problems section
+            if (!config.problems || !config.problems.items || config.problems.items.length === 0) {
+                const problemsSection = document.querySelector('#problems-list')?.closest('section');
+                if (problemsSection) problemsSection.style.display = 'none';
+            }
+            
+            // Benefits section (museum scroll)
+            if (!config.benefits || !config.benefits.items || config.benefits.items.length === 0) {
+                const benefitsSection = document.querySelector('#museum-scroll');
+                if (benefitsSection) benefitsSection.style.display = 'none';
+            }
+            
+            // Comparison section
+            if (!config.comparison || (!config.comparison.painfulWay && !config.comparison.expressWay)) {
+                const comparisonSection = document.querySelector('#comp-pain-title')?.closest('section');
+                if (comparisonSection) comparisonSection.style.display = 'none';
+            }
+            
+            // Solutions section
+            if (!config.solutions || !config.solutions.items || config.solutions.items.length === 0) {
+                const solutionsSection = document.querySelector('#solutions-list')?.closest('section');
+                if (solutionsSection) solutionsSection.style.display = 'none';
+            }
+            
+            // Speakers section
+            if (!config.speakers || !config.speakers.experts || config.speakers.experts.length === 0) {
+                const speakersSection = document.querySelector('#speakers-grid')?.closest('section');
+                if (speakersSection) speakersSection.style.display = 'none';
+            }
+            
+            // FAQ section
+            if (!config.faq || !config.faq.questions || config.faq.questions.length === 0) {
+                const faqSection = document.querySelector('#faq-list')?.closest('section');
+                if (faqSection) faqSection.style.display = 'none';
+            }
+        }
+
+        // 2. INTERACTION LOGIC
+        function initLogic() {
+            // Cursor
+            const cursorDot = document.querySelector('.cursor-dot');
+            const cursorOutline = document.querySelector('.cursor-outline');
+            
+            window.addEventListener('mousemove', (e) => {
+                cursorDot.style.left = `${e.clientX}px`;
+                cursorDot.style.top = `${e.clientY}px`;
+                cursorOutline.animate({ left: `${e.clientX}px`, top: `${e.clientY}px` }, { duration: 500, fill: "forwards" });
+            });
+
+            document.querySelectorAll('.hover-trigger').forEach(t => {
+                t.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
+                t.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
+            });
+
+            // Cinema Menu (Solutions) Hover
+            const revealImg = document.getElementById('reveal-image');
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    revealImg.style.backgroundImage = `url(${item.dataset.img})`;
+                    revealImg.style.opacity = 1;
+                    revealImg.style.transform = `translate(-50%, -50%) scale(1)`;
+                });
+                item.addEventListener('mouseleave', () => {
+                    revealImg.style.opacity = 0;
+                    revealImg.style.transform = `translate(-50%, -50%) scale(0.8)`;
+                });
+                item.addEventListener('mousemove', (e) => {
+                    gsap.to(revealImg, { x: e.clientX, y: e.clientY, duration: 0.5, ease: "power2.out" });
+                });
+            });
+
+            // Form
+            const form = document.getElementById('registrationForm');
+            const collectedData = {};
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('submitBtn');
+                const formData = new FormData(form);
+                
+                btn.textContent = "Processing...";
+                btn.classList.add('opacity-50');
+                
+                collectedData.firstName = formData.get('firstName');
+                collectedData.lastName = formData.get('lastName');
+                collectedData.email = formData.get('email');
+                collectedData.phone = formData.get('phone');
+
+                setTimeout(() => {
+                    showModal(collectedData);
+                }, 1000);
+            });
+        }
+
+        function showModal(data) {
+            const modal = document.getElementById('questionModalOverlay');
+            const container = document.getElementById('modal-steps-container');
+            const answers = [];
+            modal.classList.add('visible');
+
+            function renderQ(idx) {
+                container.innerHTML = '';
+                if(idx >= config.modalQuestions.length) {
+                    finish();
+                    return;
+                }
+                
+                const q = config.modalQuestions[idx];
+                const div = document.createElement('div');
+                div.innerHTML = `<h3 class="font-display text-3xl md:text-4xl mb-8">${q.questionText}</h3>`;
+                
+                q.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'modal-option-btn';
+                    btn.textContent = opt.text;
+                    btn.onclick = () => {
+                        // Store answer with questionId and proper format
+                        answers.push({ 
+                            questionId: q.id,
+                            question: q.questionText, 
+                            answerValue: opt.value,
+                            answerText: opt.text
+                        });
+                        renderQ(idx + 1);
+                    };
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            }
+
+            function finish() {
+                container.innerHTML = `
+                    <div class="py-12">
+                        <span class="font-display text-6xl block mb-6">Confirmed.</span>
+                        <p class="font-light text-gray-500">Access details have been sent to ${data.email}</p>
+                    </div>
+                `;
+                
+                // Get primary agent email from contact section
+                const primaryAgentEmail = config.contact?.agents?.[0]?.email || "";
+                
+                // Combine form data with question answers - match original script.js payload structure
+                const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+                
+                // Map answers to match original format: { question, answer } where answer is the text, not value
+                const mappedQuestions = answers.map(ans => {
+                    return {
+                        question: ans.question || ans.questionText,
+                        answer: ans.answerText || ans.answerValue
+                    };
+                });
+
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    source: "landing-page",
+                    name: fullName,
+                    firstName: data.firstName || '',
+                    lastName: data.lastName || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    submittedAt: new Date().toISOString(),
+                    eventName: config.event?.title || "First Time Buyer Blueprint",
+                    agentEmail: primaryAgentEmail,
+                    questions: mappedQuestions,
+                    // Deployment info fields for form submissions
+                    tag: config.deploymentInfo?.tag || "",
+                    ghlWebhookUrl: config.deploymentInfo?.ghlWebhookUrl || "",
+                    webhookUrl: config.deploymentInfo?.webhookUrl || "",
+                    facebookPixelId: config.deploymentInfo?.facebookPixelId || "",
+                    followUpBossEmail: config.deploymentInfo?.followUpBossEmail || ""
+                };
+                
+                console.log("Submitting Payload:", payload);
+                
+                // Submit to webhook if configured - use config.webhook.url (matching original script.js logic)
+                let webhookUrl = null;
+                if (config.webhook && config.webhook.enabled && config.webhook.url && 
+                    config.webhook.url !== "https://hook.us1.make.com/your-webhook-url") {
+                    webhookUrl = config.webhook.url;
+                } else if (config.deploymentInfo && config.deploymentInfo.webhookUrl) {
+                    // Fallback to deploymentInfo.webhookUrl if webhook.url not configured
+                    webhookUrl = config.deploymentInfo.webhookUrl;
+                }
+                
+                if (webhookUrl && webhookUrl.trim() !== '') {
+                    fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload),
+                        mode: 'cors'
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log("Data successfully submitted to webhook");
+                        } else {
+                            console.error("Webhook submission failed:", response.status);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Webhook submission error:", err);
+                        // Still show success to user even if webhook fails
+                    });
+                } else {
+                    console.log("Webhook not configured, showing success modal");
+                }
+                
+                // Update spots counter
+                if (typeof config !== 'undefined' && config.event && config.event.spotsLeft > 0) {
+                    config.event.spotsLeft--;
+                    const regSpots = document.getElementById('reg-spots');
+                    if (regSpots) {
+                        regSpots.textContent = config.event.spotsLeft + " Seats Remaining";
+                    }
+                    
+                    // Update nav-status if it displays spots
+                    const navStatus = document.getElementById('nav-status');
+                    if (navStatus && config.header && config.header.spotsAvailable) {
+                        // Regenerate spotsAvailable string with updated spots
+                        const updatedSpots = `Only ${config.event.spotsLeft} <span class='strikethrough'>${config.event.totalSpots}</span> Spots Available`;
+                        navStatus.innerHTML = updatedSpots;
+                    }
+                }
+            }
+
+            document.getElementById('modalCloseBtn').onclick = () => {
+                modal.classList.remove('visible');
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn && config.registration && config.registration.title) {
+                    submitBtn.textContent = config.registration.title;
+                } else {
+                    submitBtn.textContent = "Confirm Attendance";
+                }
+                submitBtn.classList.remove('opacity-50');
+                submitBtn.disabled = false;
+            };
+            renderQ(0);
+        }
+
+        // 3. ANIMATIONS
+        function initAnimations() {
+            const lenis = new Lenis({ duration: 1.2 });
+            function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+            requestAnimationFrame(raf);
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Preloader
+            const tl = gsap.timeline();
+            tl.to("#loader-line", { width: "100%", duration: 1.5, ease: "power2.inOut" })
+              .to("#preloader-text", { y: 0, duration: 1, ease: "power4.out" })
+              .to(".preloader", { y: "-100%", duration: 1.2, delay: 0.5, ease: "power2.inOut" })
+              .from(".split-line span", { y: "100%", duration: 1.2, ease: "power4.out", stagger: 0.1 }, "-=0.5")
+              .to(".nav-fade", { opacity: 1, duration: 1 }, "-=1");
+
+            // Museum Scroll
+            const sections = gsap.utils.toArray(".h-scroll-panel");
+            gsap.to(sections, {
+                xPercent: -100 * (sections.length - 1),
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#museum-scroll",
+                    pin: true,
+                    scrub: 1,
+                    end: "+=3000",
+                    // Invert cursor colors on dark section
+                    onEnter: () => {
+                        document.querySelector('.cursor-dot').style.backgroundColor = "#fff";
+                        document.querySelector('.cursor-outline').style.borderColor = "rgba(255,255,255,0.3)";
+                    },
+                    onLeave: () => {
+                        document.querySelector('.cursor-dot').style.backgroundColor = "#1a1a1a";
+                        document.querySelector('.cursor-outline').style.borderColor = "rgba(26,26,26,0.3)";
+                    },
+                    onEnterBack: () => {
+                        document.querySelector('.cursor-dot').style.backgroundColor = "#fff";
+                        document.querySelector('.cursor-outline').style.borderColor = "rgba(255,255,255,0.3)";
+                    },
+                    onLeaveBack: () => {
+                        document.querySelector('.cursor-dot').style.backgroundColor = "#1a1a1a";
+                        document.querySelector('.cursor-outline').style.borderColor = "rgba(26,26,26,0.3)";
+                    }
+                }
+            });
+
+            // Parallax
+            gsap.to(".parallax-bg", {
+                yPercent: 20,
+                ease: "none",
+                scrollTrigger: { trigger: "header", start: "top top", end: "bottom top", scrub: true }
+            });
+        }
+    </script>
+</body>
+</html>

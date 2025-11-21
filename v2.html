@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts: Inter (Swiss) & Space Mono (Technical) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- External Config -->
+    <script src="config.js"></script>
+
+    <style>
+        /* DYNAMIC VARIABLES - Will be updated by JS based on config */
+        :root {
+            --bg: #F2F2F2;
+            --black: #050505;
+            --accent: #0033FF; /* Default, will become config.primaryColor */
+            --secondary: #10b981;
+            --grid-color: #D4D4D4;
+        }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--black);
+            font-family: 'Inter', sans-serif;
+            cursor: none;
+            overflow-x: hidden;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        body.loaded { opacity: 1; }
+
+        .font-mono { font-family: 'Space Mono', monospace; }
+
+        /* SMOOTH SCROLL (Lenis) */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto; }
+        .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+        .lenis.lenis-stopped { overflow: hidden; }
+
+        /* CUSTOM CURSOR */
+        .cursor-ball {
+            position: fixed; top: 0; left: 0;
+            mix-blend-mode: difference;
+            z-index: 9999; pointer-events: none;
+            border-radius: 50%;
+        }
+        .cursor-ball-large {
+            width: 40px; height: 40px; background: white;
+            transition: transform 0.2s ease;
+        }
+        .cursor-ball-small { width: 6px; height: 6px; background: white; }
+
+        /* UTILITIES */
+        .vert-separator {
+            width: 1px; height: 100%;
+            background: var(--grid-color);
+            position: absolute; top: 0;
+        }
+        .reveal-block {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--accent);
+            z-index: 2;
+        }
+        
+        /* TYPOGRAPHY UTILS */
+        .highlight { color: var(--accent); }
+        .strikethrough { text-decoration: line-through; opacity: 0.5; }
+
+        /* FORM STYLES */
+        .brutalist-input {
+            background: transparent;
+            border-bottom: 2px solid var(--black);
+            border-radius: 0;
+            transition: all 0.3s ease;
+        }
+        .brutalist-input:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+        .field-error {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--accent);
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        /* ACCORDION */
+        .accordion-content {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0, 1, 0, 1);
+        }
+        .accordion-open .accordion-content {
+            max-height: 1000px;
+            transition: max-height 0.5s cubic-bezier(1, 0, 1, 0);
+        }
+        .accordion-icon { transition: transform 0.3s ease; }
+        .accordion-open .accordion-icon {
+            transform: rotate(45deg);
+            color: var(--accent);
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(5,5,5, 0.95);
+            z-index: 10000;
+            display: none;
+            justify-content: center; align-items: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-content {
+            background: var(--bg);
+            border: 1px solid var(--accent);
+            padding: 3rem;
+            max-width: 600px; width: 90%;
+            position: relative;
+        }
+        .modal-step { display: none; }
+        .modal-step.active { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .modal-option-btn {
+            display: block; width: 100%;
+            border: 1px solid var(--black);
+            padding: 1rem; margin-bottom: 1rem;
+            text-align: left;
+            font-family: 'Space Mono', monospace;
+            text-transform: uppercase; font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+        .modal-option-btn:hover {
+            background: var(--accent); color: white; border-color: var(--accent);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Custom Cursor -->
+    <div class="cursor-ball cursor-ball-large"></div>
+    <div class="cursor-ball cursor-ball-small"></div>
+
+    <!-- Preloader -->
+    <div class="fixed inset-0 bg-[#050505] z-[100] flex flex-col justify-between p-8 text-white" id="preloader">
+        <div class="flex justify-between font-mono text-xs uppercase">
+            <span>Initializing Blueprint</span>
+            <span id="loader-counter">0%</span>
+        </div>
+        <div class="text-center">
+            <h1 class="text-4xl md:text-9xl font-bold tracking-tighter opacity-0" id="loader-text">BLUEPRINT</h1>
+        </div>
+        <div class="w-full h-[1px] bg-white/20">
+            <div class="h-full bg-[#0033FF] w-0" id="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 px-6 py-6 flex justify-between items-start mix-blend-difference text-white pointer-events-none">
+        <div class="pointer-events-auto">
+            <p class="font-bold tracking-tighter text-xl" id="nav-logo">BLUEPRINT</p>
+            <p class="font-mono text-[10px] uppercase mt-1" id="nav-sub">A-Z GUIDE</p>
+        </div>
+        <div class="pointer-events-auto flex flex-col items-end gap-2">
+            <div class="font-mono text-[10px] uppercase bg-white text-black px-2 py-1" id="nav-spots">
+                <!-- JS -->
+            </div>
+            <a href="#register" class="inline-block bg-white text-black px-6 py-3 text-xs font-bold uppercase tracking-widest hover:bg-[var(--accent)] hover:text-white transition-colors duration-300" id="nav-cta">
+                <!-- JS -->
+            </a>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="relative min-h-screen flex flex-col pt-32 px-6 border-b border-[#D4D4D4]">
+        <!-- Grid Lines -->
+        <div class="vert-separator left-1/4 hidden md:block"></div>
+        <div class="vert-separator left-2/4 hidden md:block"></div>
+        <div class="vert-separator left-3/4 hidden md:block"></div>
+
+        <div class="relative z-10 grid md:grid-cols-4 h-full flex-grow">
+            
+            <!-- Column 1: Meta Data -->
+            <div class="col-span-1 flex flex-col justify-end pb-12 font-mono text-xs space-y-4" id="hero-meta">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Column 2-4: The Headline -->
+            <div class="col-span-3 flex flex-col justify-center">
+                <h1 class="text-[8vw] leading-[0.9] font-black tracking-tighter uppercase mix-blend-darken" id="hero-headline">
+                    <!-- Injected via JS -->
+                </h1>
+                <p class="mt-8 md:ml-auto md:w-1/2 text-lg md:text-xl font-light leading-relaxed hero-fade" id="hero-subtitle">
+                    <!-- Injected via JS -->
+                </p>
+            </div>
+        </div>
+        
+        <!-- Running Ticker -->
+        <div class="w-full border-t border-[#D4D4D4] py-4 overflow-hidden whitespace-nowrap">
+            <div class="ticker-wrap inline-block" id="ticker-content">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- IMAGE SECTION (Concept/Placeholder) -->
+    <section class="py-24 px-6 border-b border-[#D4D4D4] relative overflow-hidden">
+        <div class="grid md:grid-cols-2 gap-12 items-center">
+            <div class="relative h-[600px] w-full overflow-hidden bg-black group">
+                <div class="reveal-block"></div>
+                <img id="concept-image" src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1500&auto=format&fit=crop" class="w-full h-[120%] object-cover object-center parallax-img grayscale group-hover:grayscale-0 transition-all duration-700" alt="Concept">
+                <div class="absolute bottom-0 right-0 bg-white p-4 font-mono text-xs border-t border-l border-black" id="concept-tag">
+                    FIG 1. HOME
+                </div>
+            </div>
+            
+            <div class="space-y-8">
+                <div class="font-mono text-xs text-[var(--accent)] uppercase tracking-widest" id="hero-badge-display"></div>
+                <h2 class="text-5xl md:text-6xl font-bold tracking-tight" id="concept-title">
+                    THE PATH TO<br>OWNERSHIP
+                </h2>
+                <p class="text-xl text-gray-600 leading-relaxed" id="concept-desc">
+                    <!-- JS -->
+                </p>
+                <div class="pt-8">
+                    <a href="#register" class="group relative inline-flex items-center justify-center px-8 py-4 overflow-hidden font-mono font-medium tracking-tighter text-white bg-[#050505] hover:bg-[var(--accent)] transition-colors duration-300" id="concept-cta">
+                        <span class="absolute w-0 h-0 transition-all duration-500 ease-out bg-white rounded-full group-hover:w-56 group-hover:h-56 opacity-10"></span>
+                        <span class="relative"><!-- JS will populate --></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- THE EXPERTS (Horizontal Scroll Gallery) -->
+    <section class="relative h-screen bg-[#050505] text-white overflow-hidden" id="speakers-section">
+        <div class="absolute top-8 left-6 z-20 mix-blend-difference">
+            <h2 class="text-4xl font-bold text-white" id="speakers-title"></h2>
+            <p class="font-mono text-xs text-gray-400 mt-2" id="speakers-subtitle"></p>
+        </div>
+
+        <div class="gallery-wrapper h-full flex items-center" id="gallery-wrapper">
+            <!-- Speakers injected here via JS -->
+        </div>
+    </section>
+
+    <!-- CATALOGUE / COMPARISON -->
+    <section class="py-32 px-6 md:px-12 border-b border-[#D4D4D4] bg-[#F2F2F2]">
+        <div class="max-w-6xl mx-auto">
+            <div class="mb-16 flex items-end justify-between">
+                <h2 class="text-5xl font-bold tracking-tighter">THE CATALOGUE</h2>
+                <span class="font-mono text-xs bg-black text-white px-2 py-1">VS THE OLD WAY</span>
+            </div>
+
+            <div class="space-y-0 border-t border-black" id="catalogue-list">
+                <!-- Items injected via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ SECTION -->
+    <section class="py-24 px-6 border-b border-[#D4D4D4] bg-[#F2F2F2]">
+        <div class="max-w-4xl mx-auto">
+             <div class="mb-12">
+                <h2 class="text-4xl font-bold tracking-tighter uppercase" id="faq-title"></h2>
+                <p class="font-mono text-xs mt-2 text-gray-500" id="faq-subtitle"></p>
+            </div>
+
+            <div class="space-y-4" id="faq-list">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- REGISTER / FOOTER -->
+    <section id="register" class="min-h-screen flex flex-col md:flex-row">
+        <!-- Left: Kinetic Type -->
+        <div class="w-full md:w-1/2 bg-[var(--accent)] text-white p-12 flex flex-col justify-between relative overflow-hidden">
+            <div class="font-mono text-xs uppercase z-10">
+                Ticket Cost: <span id="form-cost"></span> <br>
+                Status: Limited (<span class="spots-counter-display"></span>)
+                <div id="form-urgency" class="mt-4 text-sm font-bold"></div>
+            </div>
+            
+            <div class="relative z-10">
+                <h2 class="text-6xl md:text-8xl font-black uppercase leading-none tracking-tighter mb-4">
+                    CLAIM<br>YOUR<br>SPOT
+                </h2>
+            </div>
+
+            <div class="absolute inset-0 opacity-20">
+                <svg width="100%" height="100%">
+                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="1"/>
+                    </pattern>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Right: The Form -->
+        <div class="w-full md:w-1/2 bg-white p-12 md:p-24 flex flex-col justify-center">
+            <form class="space-y-8" id="registrationForm">
+                <div class="flex gap-4">
+                    <div class="relative w-1/2">
+                        <input type="text" id="firstName" name="firstName" required class="peer w-full brutalist-input py-4 text-xl font-bold placeholder-transparent" placeholder="First Name">
+                        <label for="firstName" class="absolute left-0 -top-3.5 font-mono text-xs text-gray-500 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-[var(--accent)]">FIRST NAME</label>
+                    </div>
+                    <div class="relative w-1/2">
+                        <input type="text" id="lastName" name="lastName" required class="peer w-full brutalist-input py-4 text-xl font-bold placeholder-transparent" placeholder="Last Name">
+                        <label for="lastName" class="absolute left-0 -top-3.5 font-mono text-xs text-gray-500 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-[var(--accent)]">LAST NAME</label>
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <input type="email" id="email" name="email" required class="peer w-full brutalist-input py-4 text-xl font-bold placeholder-transparent" placeholder="Email">
+                    <label for="email" class="absolute left-0 -top-3.5 font-mono text-xs text-gray-500 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-[var(--accent)]">EMAIL ADDRESS</label>
+                </div>
+
+                <div class="relative">
+                    <input type="tel" id="phone" name="phone" required class="peer w-full brutalist-input py-4 text-xl font-bold placeholder-transparent" placeholder="Phone">
+                    <label for="phone" class="absolute left-0 -top-3.5 font-mono text-xs text-gray-500 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-[var(--accent)]">PHONE NUMBER</label>
+                </div>
+
+                <label class="flex items-start gap-3 cursor-pointer checkbox-wrapper group">
+                    <input type="checkbox" id="consent" name="consent" required class="hidden">
+                    <div class="w-5 h-5 border border-black flex-shrink-0 relative bg-white group-hover:border-[var(--accent)] transition-colors check-box-indicator"></div>
+                    <span class="font-mono text-[10px] text-gray-500 leading-tight pt-0.5">
+                        I CONSENT TO RECEIVING COMMUNICATIONS. WE HATE SPAM AS MUCH AS YOU DO.
+                    </span>
+                </label>
+
+                <button type="submit" id="submitBtn" class="w-full bg-black text-white py-6 text-xl font-bold uppercase tracking-widest hover:bg-[var(--accent)] transition-all duration-300 hover:scale-[1.01]">
+                    Claim Free Spot
+                </button>
+
+                <div class="text-center font-mono text-[10px] text-gray-400">
+                    <p id="form-note" class="mb-2"></p>
+                    <p id="footer-brokerage"></p>
+                    <p class="mt-1" id="footer-address"></p>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="questionModalOverlay">
+        <div class="modal-content">
+            <button id="modalCloseBtn" class="absolute top-4 right-4 text-xl hover:text-[var(--accent)] transition-colors"><i class="fas fa-times"></i></button>
+            <div id="modal-steps-container"></div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <script>
+        // Wait for config to load before initializing
+        function waitForConfig(callback) {
+            if (typeof config !== 'undefined') {
+                callback();
+            } else {
+                // Check if config.js failed to load
+                setTimeout(() => {
+                    if (typeof config === 'undefined') {
+                        console.error('Config.js failed to load! Please ensure config.js exists and is accessible.');
+                        // Show error message to user
+                        document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: monospace; padding: 2rem; text-align: center;"><div><h1 style="color: red; margin-bottom: 1rem;">Configuration Error</h1><p>config.js file not found or failed to load.</p><p style="margin-top: 1rem; color: #666;">Please ensure config.js exists in the same directory.</p></div></div>';
+                        return;
+                    }
+                    callback();
+                }, 100);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForConfig(() => {
+                applyTheme();
+                loadConfigContent();
+                initializeLogic();
+                
+                // Delay animation start slightly to allow DOM injection
+                setTimeout(() => {
+                    document.body.classList.add('loaded');
+                    initializeAnimations();
+                }, 100);
+            });
+        });
+
+        function applyTheme() {
+            if(typeof config !== 'undefined' && config.settings && config.settings.primaryColor) {
+                document.documentElement.style.setProperty('--accent', config.settings.primaryColor);
+            }
+            if(typeof config !== 'undefined' && config.settings && config.settings.secondaryColor) {
+                document.documentElement.style.setProperty('--secondary', config.settings.secondaryColor);
+            }
+        }
+
+        function loadConfigContent() {
+            if (typeof config === 'undefined') {
+                console.error('Config not loaded');
+                return;
+            }
+            
+            document.title = config.meta.pageTitle;
+
+            // Nav
+            document.getElementById('nav-logo').textContent = config.event.title;
+            document.getElementById('nav-spots').innerHTML = config.header.spotsAvailable;
+            document.getElementById('nav-cta').textContent = config.header.ctaText;
+            const spotDisplays = document.querySelectorAll('.spots-counter-display');
+            spotDisplays.forEach(el => el.innerHTML = `${config.event.spotsLeft}/${config.event.totalSpots}`);
+
+            // Hero
+            const metaHtml = `
+                <div><p class="text-gray-500 uppercase">Date</p><p>${config.event.date}</p><p>${config.event.time}</p></div>
+                <div><p class="text-gray-500 uppercase">Location</p><p>${config.event.location}</p><p>${config.event.locationNote}</p></div>
+                <div><p class="text-gray-500 uppercase">Host</p><p>${config.contact.agents[0].name}</p></div>
+            `;
+            document.getElementById('hero-meta').innerHTML = metaHtml;
+            document.getElementById('hero-headline').innerHTML = config.hero.headline;
+            document.getElementById('hero-subtitle').innerHTML = config.hero.subtitle;
+            document.getElementById('hero-badge-display').textContent = config.hero.badge;
+
+            // Ticker (Extract keywords from config problems and solutions)
+            const extractKeywords = (items) => {
+                const keywords = [];
+                items.forEach(item => {
+                    // Extract text between <strong> tags
+                    const strongMatches = item.match(/<strong>(.*?)<\/strong>/gi);
+                    if (strongMatches) {
+                        strongMatches.forEach(match => {
+                            const text = match.replace(/<\/?strong>/gi, '').trim();
+                            if (text) keywords.push(text.toUpperCase());
+                        });
+                    }
+                    // Also extract capitalized words/phrases
+                    const capsMatches = item.match(/\b[A-Z]{2,}\b/g);
+                    if (capsMatches) {
+                        capsMatches.forEach(match => {
+                            if (match.length > 3) keywords.push(match);
+                        });
+                    }
+                });
+                return [...new Set(keywords)]; // Remove duplicates
+            };
+            
+            const problemKeywords = extractKeywords((config.problems && config.problems.items) ? config.problems.items : []);
+            const solutionKeywords = extractKeywords((config.solutions && config.solutions.items) ? config.solutions.items : []);
+            const allKeywords = [...problemKeywords, ...solutionKeywords].slice(0, 8); // Limit to 8 unique keywords
+            
+            // Fallback keywords if extraction yields too few
+            const fallbackKeywords = ["FIRST TIME BUYER", "NO DOWN PAYMENT?", "BUILD EQUITY", "STOP RENTING", "EXPERT ADVICE"];
+            const tickerKeywords = allKeywords.length >= 3 ? allKeywords : fallbackKeywords;
+            
+            const tickerHtml = tickerKeywords.map(t => `<span class="font-mono text-xs uppercase tracking-widest mx-4">/// ${t} ///</span>`).join('');
+            document.getElementById('ticker-content').innerHTML = tickerHtml + tickerHtml;
+
+            // Concept Section (Using eventDetails or benefits title, and problems/success statement)
+            document.getElementById('concept-tag').textContent = config.hero.badge;
+            const conceptTitle = document.getElementById('concept-title');
+            if (conceptTitle && config.eventDetails && config.eventDetails.sectionTitle) {
+                // Use eventDetails.sectionTitle if available, otherwise keep hardcoded
+                conceptTitle.innerHTML = config.eventDetails.sectionTitle.replace(/Secure Your Spot Below/i, '').trim();
+            }
+            document.getElementById('concept-desc').innerHTML = ((config.problems && config.problems.items && config.problems.items[0]) ? config.problems.items[0] : '') + " " + (config.successStatement || '');
+            
+            // Concept CTA button
+            const conceptCta = document.getElementById('concept-cta');
+            if (conceptCta && config.hero && config.hero.ctaText) {
+                const ctaSpan = conceptCta.querySelector('span.relative');
+                if (ctaSpan) ctaSpan.textContent = config.hero.ctaText;
+            }
+
+            // Speakers (Horizontal Scroll)
+            if(config.speakers && config.speakers.experts && config.speakers.experts.length > 0) {
+                document.getElementById('speakers-title').innerHTML = config.speakers.title;
+                document.getElementById('speakers-subtitle').innerHTML = config.speakers.subtitle;
+                
+                const wrapper = document.getElementById('gallery-wrapper');
+                wrapper.style.width = `${config.speakers.experts.length * 100}%`;
+                
+                // Fallback images for architecture look since config has no images
+                const fallbackImages = [
+                    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1554224155-6726b3ff0a77?q=80&w=1000&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1581092921461-eab62e97a78e?q=80&w=1000&auto=format&fit=crop"
+                ];
+
+                const expertsHtml = config.speakers.experts.map((exp, index) => `
+                    <div class="w-screen h-full flex-shrink-0 flex items-center justify-center relative border-r border-white/10 gallery-panel">
+                        <div class="grid grid-cols-1 md:grid-cols-2 w-full h-full">
+                            <div class="h-full w-full relative overflow-hidden order-2 md:order-1">
+                                <div class="p-12 md:p-24 flex flex-col justify-center space-y-6 h-full bg-[#111]">
+                                    <span class="text-[var(--accent)] font-mono text-xs uppercase tracking-widest">${exp.title}</span>
+                                    <h3 class="text-4xl md:text-6xl font-bold leading-none uppercase">${exp.name}</h3>
+                                    <p class="text-gray-400 max-w-md">${exp.description}</p>
+                                    <ul class="list-disc pl-5 text-sm text-gray-500 space-y-2">
+                                        ${exp.points ? exp.points.map(p => `<li>${p}</li>`).join('') : ''}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="h-full w-full relative overflow-hidden order-1 md:order-2">
+                                <img src="${fallbackImages[index % fallbackImages.length]}" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" alt="${exp.name}">
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                wrapper.innerHTML = expertsHtml;
+            }
+
+            // Catalogue (Zipping Painful vs Express Way)
+            if(config.comparison && config.comparison.painfulWay && config.comparison.expressWay) {
+                const painPoints = config.comparison.painfulWay.points || [];
+                const expressPoints = config.comparison.expressWay.points || [];
+                const maxLength = Math.max(painPoints.length, expressPoints.length);
+                
+                let catalogueHtml = '';
+                for(let i=0; i<maxLength; i++) {
+                    catalogueHtml += `
+                    <div class="group grid md:grid-cols-12 border-b border-black py-8 hover:bg-white transition-colors duration-300 cursor-pointer">
+                        <div class="col-span-1 font-mono text-xs pt-2">0${i+1}</div>
+                        <div class="col-span-4 text-2xl font-bold uppercase group-hover:text-[var(--accent)] transition-colors">Insight ${i+1}</div>
+                        <div class="col-span-7 pt-2 md:pt-0 font-light grid md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="font-mono text-[10px] text-red-500 uppercase mb-1">The Hard Way</p>
+                                <p class="text-sm text-gray-500">${painPoints[i] || ''}</p>
+                            </div>
+                            <div>
+                                <p class="font-mono text-[10px] text-[var(--accent)] uppercase mb-1">The Blueprint Way</p>
+                                <p class="text-sm text-black">${expressPoints[i] || ''}</p>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+                document.getElementById('catalogue-list').innerHTML = catalogueHtml;
+            }
+
+            // FAQ
+            if(config.faq && config.faq.questions && config.faq.questions.length > 0) {
+                document.getElementById('faq-title').textContent = config.faq.title;
+                document.getElementById('faq-subtitle').textContent = config.faq.subtitle;
+                document.getElementById('faq-list').innerHTML = config.faq.questions.map(q => `
+                    <div class="border border-black bg-white p-6 cursor-pointer accordion-item group" onclick="toggleAccordion(this)">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold uppercase text-sm">${q.question}</h3>
+                            <i class="fas fa-plus accordion-icon font-mono"></i>
+                        </div>
+                        <div class="accordion-content">
+                            <p class="pt-4 text-sm text-gray-600 leading-relaxed">${q.answer}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Form Section
+            document.getElementById('form-cost').textContent = config.event.cost || 'FREE';
+            document.getElementById('submitBtn').textContent = config.registration.title || 'Claim Your Spot';
+            document.getElementById('footer-brokerage').textContent = config.footer.brokerage || '';
+            document.getElementById('footer-address').textContent = config.footer.address || '';
+            
+            // Add registration urgency and note if elements exist
+            const formUrgency = document.getElementById('form-urgency');
+            if (formUrgency && config.registration && config.registration.urgency) {
+                formUrgency.innerHTML = config.registration.urgency;
+            }
+            
+            const formNote = document.getElementById('form-note');
+            if (formNote && config.registration && config.registration.note) {
+                formNote.textContent = config.registration.note;
+            }
+
+            // Update preloader text with event title
+            if (config.event && config.event.title) {
+                const loaderText = document.getElementById('loader-text');
+                if (loaderText) {
+                    loaderText.textContent = config.event.title.toUpperCase();
+                }
+                // Update "Initializing Blueprint" text
+                const initText = document.querySelector('#preloader span:first-child');
+                if (initText) {
+                    initText.textContent = `Initializing ${config.event.title}`;
+                }
+            }
+
+            hideEmptySections();
+        }
+
+        function hideEmptySections() {
+            // Speakers section
+            if (!config.speakers || !config.speakers.experts || config.speakers.experts.length === 0) {
+                const speakersSection = document.querySelector('#speakers-section');
+                if (speakersSection) speakersSection.style.display = 'none';
+            }
+            
+            // Comparison section
+            if (!config.comparison || (!config.comparison.painfulWay && !config.comparison.expressWay)) {
+                const comparisonSection = document.querySelector('#catalogue-list')?.closest('section');
+                if (comparisonSection) comparisonSection.style.display = 'none';
+            }
+            
+            // FAQ section
+            if (!config.faq || !config.faq.questions || config.faq.questions.length === 0) {
+                const faqSection = document.querySelector('#faq-list')?.closest('section');
+                if (faqSection) faqSection.style.display = 'none';
+            }
+        }
+
+        function initializeLogic() {
+            // Accordion
+            window.toggleAccordion = function(element) {
+                const allItems = document.querySelectorAll('.accordion-item');
+                allItems.forEach(item => {
+                    if (item !== element) item.classList.remove('accordion-open');
+                });
+                element.classList.toggle('accordion-open');
+            };
+
+            // Phone Formatting
+            document.getElementById('phone').addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 6) value = `${value.slice(0, 3)}-${value.slice(3, 6)}-${value.slice(6, 10)}`;
+                else if (value.length >= 3) value = `${value.slice(0, 3)}-${value.slice(3)}`;
+                e.target.value = value;
+            });
+
+            // Custom Checkbox
+            const checkbox = document.getElementById('consent');
+            const indicator = document.querySelector('.check-box-indicator');
+            checkbox.addEventListener('change', function() {
+                const color = config.settings.primaryColor || '#0033FF';
+                if(this.checked) {
+                    indicator.style.backgroundColor = color;
+                    indicator.style.borderColor = color;
+                } else {
+                    indicator.style.backgroundColor = 'white';
+                    indicator.style.borderColor = 'black';
+                }
+            });
+
+            // Form Submission
+            document.getElementById('registrationForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                if(validateForm()) startSubmissionProcess();
+            });
+        }
+
+        function validateForm() {
+            let isValid = true;
+            const requiredInputs = document.querySelectorAll('input[required]');
+            requiredInputs.forEach(input => {
+                const existingError = input.parentElement.querySelector('.field-error');
+                if(existingError) existingError.remove();
+
+                if(!input.value.trim() || (input.type === 'checkbox' && !input.checked)) {
+                    isValid = false;
+                    input.style.borderColor = 'red';
+                    const msg = document.createElement('div');
+                    msg.className = 'field-error';
+                    msg.textContent = 'REQUIRED';
+                    input.parentElement.appendChild(msg);
+                } else {
+                    input.style.borderColor = (input.type === 'checkbox') ? '' : 'black';
+                }
+            });
+            return isValid;
+        }
+
+        let collectedData = {};
+
+        function startSubmissionProcess() {
+            const btn = document.getElementById('submitBtn');
+            const formData = new FormData(document.getElementById('registrationForm'));
+            
+            btn.textContent = "PROCESSING...";
+            btn.disabled = true;
+
+            collectedData = {
+                firstName: formData.get('firstName'),
+                lastName: formData.get('lastName'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                timestamp: new Date().toISOString()
+            };
+
+            setTimeout(() => {
+                btn.textContent = "Please Answer...";
+                showModalQuestions();
+            }, 800);
+        }
+
+        let currentQIndex = 0;
+        let answers = [];
+
+        function showModalQuestions() {
+            const modal = document.getElementById('questionModalOverlay');
+            const closeBtn = document.getElementById('modalCloseBtn');
+            
+            modal.classList.add('visible');
+            currentQIndex = 0;
+            answers = [];
+
+            closeBtn.onclick = function() {
+                modal.classList.remove('visible');
+                document.getElementById('submitBtn').textContent = config.registration.title;
+                document.getElementById('submitBtn').disabled = false;
+            };
+
+            renderQuestion(currentQIndex);
+        }
+
+        function renderQuestion(index) {
+            const container = document.getElementById('modal-steps-container');
+            container.innerHTML = '';
+
+            if (index >= config.modalQuestions.length) {
+                finishSubmission();
+                return;
+            }
+
+            const q = config.modalQuestions[index];
+            const wrapper = document.createElement('div');
+            wrapper.className = 'modal-step active';
+            
+            const title = document.createElement('h3');
+            title.className = 'text-2xl font-bold mb-6 uppercase';
+            title.textContent = q.questionText;
+            wrapper.appendChild(title);
+
+            q.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'modal-option-btn';
+                btn.textContent = opt.text;
+                btn.onclick = () => {
+                    // Store answer with questionId to match original format
+                    answers.push({ 
+                        questionId: q.id,
+                        question: q.questionText, 
+                        answerValue: opt.value,
+                        answerText: opt.text
+                    });
+                    renderQuestion(index + 1);
+                };
+                wrapper.appendChild(btn);
+            });
+
+            container.appendChild(wrapper);
+        }
+
+        function finishSubmission() {
+            const container = document.getElementById('modal-steps-container');
+            container.innerHTML = `
+                <div class="text-center modal-step active">
+                    <div class="text-6xl text-[var(--accent)] mb-4"><i class="fas fa-check-circle"></i></div>
+                    <h3 class="text-3xl font-bold uppercase mb-2">Confirmed</h3>
+                    <p class="font-mono text-xs text-gray-500">CHECK YOUR EMAIL FOR DETAILS.</p>
+                </div>
+            `;
+
+            // Get primary agent email from contact section
+            const primaryAgentEmail = config.contact?.agents?.[0]?.email || "";
+            
+            // Combine form data with question answers - match original script.js payload structure
+            const fullName = `${collectedData.firstName || ''} ${collectedData.lastName || ''}`.trim();
+            
+            // Map answers to match original format: { question, answer } where answer is the text
+            const mappedQuestions = answers.map(ans => {
+                return {
+                    question: ans.question || ans.questionText,
+                    answer: ans.answerText || ans.answerValue
+                };
+            });
+
+            const finalPayload = {
+                timestamp: new Date().toISOString(),
+                source: "landing-page",
+                name: fullName,
+                firstName: collectedData.firstName || '',
+                lastName: collectedData.lastName || '',
+                email: collectedData.email || '',
+                phone: collectedData.phone || '',
+                submittedAt: collectedData.timestamp || new Date().toISOString(),
+                eventName: config.event?.title || "First Time Buyer Blueprint",
+                agentEmail: primaryAgentEmail,
+                questions: mappedQuestions,
+                // Deployment info fields for form submissions
+                tag: config.deploymentInfo?.tag || "",
+                ghlWebhookUrl: config.deploymentInfo?.ghlWebhookUrl || "",
+                webhookUrl: config.deploymentInfo?.webhookUrl || "",
+                facebookPixelId: config.deploymentInfo?.facebookPixelId || "",
+                followUpBossEmail: config.deploymentInfo?.followUpBossEmail || ""
+            };
+
+            console.log("Submitting Payload:", finalPayload);
+
+            // Submit to webhook if configured - use config.webhook.url (matching original script.js logic)
+            let webhookUrl = null;
+            if (config.webhook && config.webhook.enabled && config.webhook.url && 
+                config.webhook.url !== "https://hook.us1.make.com/your-webhook-url") {
+                webhookUrl = config.webhook.url;
+            } else if (config.deploymentInfo && config.deploymentInfo.webhookUrl) {
+                // Fallback to deploymentInfo.webhookUrl if webhook.url not configured
+                webhookUrl = config.deploymentInfo.webhookUrl;
+            }
+            
+            if (webhookUrl && webhookUrl.trim() !== '') {
+                fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(finalPayload),
+                    mode: 'cors'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log("Data successfully submitted to webhook");
+                    } else {
+                        console.error("Webhook submission failed:", response.status);
+                    }
+                })
+                .catch(err => {
+                    console.error("Webhook submission error:", err);
+                    // Still show success to user even if webhook fails
+                });
+            } else {
+                console.log("Webhook not configured, showing success modal");
+            }
+
+            // Update spots counter
+            if (typeof config !== 'undefined' && config.event && config.event.spotsLeft > 0) {
+                config.event.spotsLeft--;
+                const spotDisplays = document.querySelectorAll('.spots-counter-display');
+                spotDisplays.forEach(el => el.innerHTML = `${config.event.spotsLeft}/${config.event.totalSpots}`);
+                
+                // Update nav spots display
+                const navSpots = document.getElementById('nav-spots');
+                if (navSpots && config.header) {
+                    navSpots.innerHTML = `Only ${config.event.spotsLeft} <span class="strikethrough">${config.event.totalSpots}</span> Spots Available`;
+                }
+            }
+        }
+
+        function initializeAnimations() {
+            const lenis = new Lenis({
+                duration: 1.2,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                direction: 'vertical',
+                smooth: true
+            });
+            function raf(time) {
+                lenis.raf(time);
+                requestAnimationFrame(raf);
+            }
+            requestAnimationFrame(raf);
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Preloader
+            const tlLoader = gsap.timeline();
+            let count = { val: 0 };
+            gsap.to(count, { val: 100, duration: 1.5, onUpdate: () => document.getElementById('loader-counter').innerText = Math.round(count.val) + '%' });
+            tlLoader.to("#loader-bar", { width: "100%", duration: 1.5, ease: "power2.inOut" })
+                    .to("#loader-text", { opacity: 1, duration: 0.5 }, "-=0.8")
+                    .to("#loader-text", { y: -50, opacity: 0, duration: 0.5, delay: 0.5 })
+                    .to("#preloader", { height: 0, duration: 0.8, ease: "power4.inOut" });
+
+            // Hero
+            gsap.from(".hero-fade", { scrollTrigger: { trigger: ".hero-fade", start: "top 90%" }, opacity: 0, y: 20, duration: 1, delay: 2.5 });
+
+            // Ticker
+            gsap.to(".ticker-wrap", { xPercent: -50, repeat: -1, duration: 25, ease: "linear" });
+
+            // Parallax
+            gsap.to(".reveal-block", { scrollTrigger: { trigger: ".reveal-block", start: "top 75%" }, height: "0%", duration: 1.5, ease: "power2.inOut" });
+            gsap.to(".parallax-img", { scrollTrigger: { trigger: ".parallax-img", start: "top bottom", end: "bottom top", scrub: true }, y: -50, scale: 1.1 });
+
+            // Horizontal Gallery
+            const sections = gsap.utils.toArray(".gallery-panel");
+            if(sections.length > 0) {
+                gsap.to(sections, {
+                    xPercent: -100 * (sections.length - 1),
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: "#speakers-section",
+                        pin: true,
+                        scrub: 1,
+                        snap: 1 / (sections.length - 1),
+                        end: "+=3000", 
+                    }
+                });
+            }
+
+            // Cursor
+            const cursorBig = document.querySelector('.cursor-ball-large');
+            const cursorSmall = document.querySelector('.cursor-ball-small');
+            document.addEventListener('mousemove', (e) => {
+                gsap.to(cursorBig, { x: e.clientX - 20, y: e.clientY - 20, duration: 0.3 });
+                gsap.to(cursorSmall, { x: e.clientX - 3, y: e.clientY - 3, duration: 0.1 });
+            });
+            const hoverElements = document.querySelectorAll('a, button, .cursor-pointer, input');
+            hoverElements.forEach(el => {
+                el.addEventListener('mouseenter', () => gsap.to(cursorBig, { scale: 2.5, duration: 0.3 }));
+                el.addEventListener('mouseleave', () => gsap.to(cursorBig, { scale: 1, duration: 0.3 }));
+            });
+        }
+    </script>
+</body>
+</html>

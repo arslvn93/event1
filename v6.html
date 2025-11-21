@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#050505]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE BLUEPRINT | IMMERSIVE</title>
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP & Lenis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- Fonts: Oswald (Impact) & Space Grotesk (Data) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- External Config -->
+    <script src="config.js"></script>
+
+    <style>
+        :root {
+            --red: #dc2626; /* Config Primary */
+            --green: #10b981; /* Config Secondary */
+            --black: #050505;
+            --white: #F2F2F2;
+            --gray: #222222;
+        }
+
+        body {
+            background-color: var(--black);
+            color: var(--white);
+            font-family: 'Space Grotesk', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        .font-display { font-family: 'Oswald', sans-serif; text-transform: uppercase; }
+
+        /* SMOOTH SCROLL */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto; }
+
+        /* NOISE TEXTURE */
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.05; pointer-events: none; z-index: 9000;
+        }
+
+        /* CUSTOM CURSOR */
+        #cursor {
+            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
+            background: var(--white); border-radius: 50%; pointer-events: none;
+            z-index: 9999; mix-blend-mode: difference;
+            transition: transform 0.1s, width 0.3s, height 0.3s;
+        }
+        body.hovering #cursor { width: 100px; height: 100px; background: var(--red); mix-blend-mode: normal; opacity: 0.8; }
+        .cursor-text {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 10px; color: black; font-weight: bold; opacity: 0;
+        }
+        body.hovering .cursor-text { opacity: 1; }
+
+        /* HERO TYPOGRAPHY */
+        .mega-text { font-size: 18vw; line-height: 0.8; letter-spacing: -0.04em; white-space: nowrap; }
+        
+        /* HORIZONTAL SCROLL */
+        .horizontal-container { width: 400%; height: 100%; display: flex; flex-wrap: nowrap; }
+        .panel { width: 100vw; height: 100vh; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-right: 1px solid #222; position: relative; }
+
+        /* CARD STACK */
+        .card-stack { position: relative; width: 100%; padding-bottom: 20vh; }
+        .card {
+            position: sticky; top: 10vh; 
+            background: var(--gray); border: 1px solid #333;
+            border-radius: 2rem; overflow: hidden;
+            box-shadow: 0 -50px 100px rgba(0,0,0,0.8);
+            margin-bottom: 5vh;
+        }
+
+        /* MARQUEE */
+        .marquee-track { display: flex; white-space: nowrap; will-change: transform; }
+        
+        /* UTILS */
+        .text-outline { -webkit-text-stroke: 1px rgba(255,255,255,0.2); color: transparent; transition: 0.3s; }
+        .group:hover .text-outline { -webkit-text-stroke: 0px; color: var(--white); }
+        
+        .input-line {
+            width: 100%; background: transparent; border: none; border-bottom: 1px solid #333;
+            padding: 1.5rem 0; font-family: 'Oswald', sans-serif; font-size: 2rem;
+            color: white; transition: 0.3s;
+        }
+        .input-line:focus { border-color: var(--red); outline: none; }
+        .input-line::placeholder { color: #333; }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; inset: 0; background: black; z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            clip-path: circle(0% at 50% 50%); transition: clip-path 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+        .modal-overlay.active { clip-path: circle(150% at 50% 50%); }
+    </style>
+</head>
+<body>
+
+    <!-- FX LAYERS -->
+    <div class="noise-overlay"></div>
+    <div id="cursor"><span class="cursor-text">OPEN</span></div>
+
+    <!-- PRELOADER -->
+    <div id="preloader" class="fixed inset-0 bg-[#050505] z-[100] flex flex-col justify-between p-10 text-white">
+        <div class="flex justify-between font-mono text-xs uppercase">
+            <span>System Check</span>
+            <span id="loader-counter">00</span>
+        </div>
+        <h1 class="font-display text-[15vw] leading-none text-center opacity-20 animate-pulse" id="loader-text">BLUEPRINT</h1>
+        <div class="w-full h-px bg-[#222] overflow-hidden">
+            <div class="h-full bg-[var(--red)] w-0" id="loader-bar"></div>
+        </div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav class="fixed top-0 w-full p-8 flex justify-between items-start z-50 mix-blend-difference text-white">
+        <div>
+            <div class="font-display text-2xl leading-none hover-trigger" data-cursor="HOME">BLUEPRINT<span class="text-[var(--red)]">.</span></div>
+            <div class="font-mono text-[10px] mt-1 opacity-60 max-w-[150px] leading-tight" id="nav-loc">Loading Location...</div>
+        </div>
+        
+        <div class="flex flex-col items-end text-right gap-1">
+            <div class="font-mono text-xs border border-white/20 px-3 py-1 rounded-full">
+                <span class="w-2 h-2 bg-[var(--red)] rounded-full inline-block mr-2 animate-pulse"></span>
+                <span id="nav-spots">...</span>
+            </div>
+            <a href="#register" class="font-display text-xl hover:text-[var(--red)] transition-colors hover-trigger" data-cursor="JOIN">SECURE TICKET</a>
+        </div>
+    </nav>
+
+    <!-- 01. HERO: KINETIC TYPOGRAPHY -->
+    <header class="min-h-screen flex flex-col justify-center relative overflow-hidden pt-20">
+        <div class="px-4 md:px-12 relative z-10">
+            <div class="overflow-hidden">
+                <span class="font-mono text-[var(--red)] text-sm mb-4 block reveal-text">/// EXCLUSIVE WORKSHOP</span>
+            </div>
+            
+            <h1 class="mega-text font-bold" id="hero-headline-container">
+                <!-- JS Injected -->
+            </h1>
+
+            <div class="grid md:grid-cols-12 gap-12 mt-12 border-t border-white/10 pt-8 reveal-text delay-200">
+                <div class="md:col-span-5">
+                    <p class="text-xl md:text-2xl font-light leading-snug text-white/80" id="hero-subtitle"></p>
+                </div>
+                <div class="md:col-span-7 flex items-end justify-end">
+                    <div class="animate-spin-slow w-32 h-32 border border-white/20 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-arrow-down text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Background Video/Image -->
+        <div class="absolute inset-0 z-0 opacity-20">
+            <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2000" class="w-full h-full object-cover parallax-bg">
+        </div>
+    </header>
+
+    <!-- 02. THE CONTEXT (PROBLEMS) -->
+    <section class="py-32 px-4 md:px-12 bg-[#050505] relative z-10">
+        <div class="mb-24 border-b border-white/10 pb-8 flex justify-between items-end">
+            <h2 class="font-display text-6xl md:text-8xl" id="problems-title">THE CONTEXT</h2>
+            <span class="font-mono text-xs text-[var(--red)]">01 // ANALYSIS</span>
+        </div>
+
+        <div class="grid gap-px bg-[#222] border border-[#222]" id="problems-grid">
+            <!-- JS Injected -->
+        </div>
+    </section>
+
+    <!-- 03. HORIZONTAL SCROLL (COMPARISON & BENEFITS) -->
+    <section id="horizontal-scroll" class="h-screen overflow-hidden bg-[#0a0a0a]">
+        <div class="horizontal-container" id="horizontal-track">
+            
+            <!-- Panel 1: Intro to Shift -->
+            <div class="panel border-r border-[#222] bg-[#050505]">
+                <div class="text-center">
+                    <span class="font-mono text-xs text-[var(--red)] mb-4 block">02 // THE SHIFT</span>
+                    <h2 class="font-display text-[10vw] leading-none">CHOOSE<br>WISELY</h2>
+                </div>
+            </div>
+
+            <!-- Panel 2: The Painful Way -->
+            <div class="panel bg-[#111] relative group hover-trigger" data-cursor="OLD WAY">
+                <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1590856029826-c7a73142bbf1?q=80&w=1000')] bg-cover opacity-10 group-hover:opacity-30 transition-opacity duration-700 mix-blend-overlay"></div>
+                <div class="p-12 md:p-24 relative z-10 w-full max-w-4xl">
+                    <h3 class="font-display text-6xl text-gray-600 mb-12" id="comp-pain-title"></h3>
+                    <ul class="space-y-6 font-mono text-lg text-gray-500" id="comp-pain-list"></ul>
+                </div>
+            </div>
+
+            <!-- Panel 3: The Express Way -->
+            <div class="panel bg-[var(--red)] text-black relative group hover-trigger" data-cursor="NEW WAY">
+                <div class="p-12 md:p-24 relative z-10 w-full max-w-4xl">
+                    <h3 class="font-display text-6xl mb-12 text-white" id="comp-gain-title"></h3>
+                    <ul class="space-y-6 font-mono text-lg font-bold" id="comp-gain-list"></ul>
+                </div>
+            </div>
+
+            <!-- Panel 4: The Benefits (Curriculum) -->
+            <div class="panel bg-white text-black">
+                <div class="w-full h-full flex flex-col">
+                    <div class="p-12 border-b border-black/10">
+                        <h2 class="font-display text-6xl" id="benefits-title">THE DOWNLOAD</h2>
+                    </div>
+                    <div class="flex-grow grid grid-cols-2 md:grid-cols-3" id="benefits-grid">
+                        <!-- JS Injected -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 04. THE ARCHITECTS (SPEAKERS STACK) -->
+    <section class="py-32 px-4 md:px-12 bg-[#080808]">
+        <div class="text-center mb-32">
+            <span class="font-mono text-xs text-[var(--red)]">03 // THE SQUAD</span>
+            <h2 class="font-display text-[12vw] leading-none opacity-10">EXPERTS</h2>
+            <h2 class="font-display text-6xl md:text-8xl -mt-[8vw] relative z-10" id="speakers-title"></h2>
+        </div>
+
+        <div class="card-stack max-w-4xl mx-auto" id="speakers-stack">
+            <!-- JS Injected -->
+        </div>
+    </section>
+
+    <!-- 05. FAQ ACCORDION -->
+    <section class="py-32 px-4 md:px-12 border-t border-[#222]">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="font-display text-6xl mb-16" id="faq-title"></h2>
+            <div id="faq-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 06. VORTEX REGISTRATION -->
+    <section id="register" class="min-h-screen flex items-center justify-center py-24 px-4 relative overflow-hidden">
+        <!-- Background Vortex -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div class="w-[150vw] h-[150vw] border-[1px] border-[#222] rounded-full animate-spin-slow opacity-20"></div>
+            <div class="w-[100vw] h-[100vw] border-[1px] border-[#222] rounded-full animate-spin-slow opacity-30" style="animation-direction: reverse; animation-duration: 40s;"></div>
+            <div class="w-[50vw] h-[50vw] border-[1px] border-[var(--red)] rounded-full animate-spin-slow opacity-10"></div>
+        </div>
+
+        <div class="relative z-10 w-full max-w-2xl bg-[#0a0a0a] border border-[#222] p-12 md:p-20 rounded-[3rem]">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-6xl md:text-8xl mb-4" id="reg-title"></h2>
+                <p class="font-mono text-[var(--red)] text-sm" id="reg-spots"></p>
+            </div>
+
+            <form id="registrationForm" class="space-y-12">
+                <div class="group">
+                    <input type="text" name="firstName" class="input-line" placeholder="FIRST NAME" required>
+                </div>
+                <div class="group">
+                    <input type="text" name="lastName" class="input-line" placeholder="LAST NAME" required>
+                </div>
+                <div class="group">
+                    <input type="email" name="email" class="input-line" placeholder="EMAIL FREQUENCY" required>
+                </div>
+                <div class="group">
+                    <input type="tel" name="phone" class="input-line" placeholder="MOBILE UPLINK" required>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-white text-black font-display text-3xl py-6 rounded-full hover:bg-[var(--red)] hover:text-white transition-all duration-300 hover-trigger" data-cursor="SEND">
+                    INITIATE PROTOCOL
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- MODAL (INTERROGATION) -->
+    <div class="modal-overlay" id="questionModalOverlay">
+        <div class="w-full max-w-3xl p-12 text-white">
+            <div class="flex justify-between items-center mb-12 border-b border-white/20 pb-6">
+                <h3 class="font-display text-4xl text-[var(--red)]">DATA REQUIRED</h3>
+                <button id="modalCloseBtn" class="font-mono text-xs hover:text-[var(--red)] hover-trigger">[ ABORT ]</button>
+            </div>
+            <div id="modal-steps-container"></div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="py-12 px-4 md:px-12 border-t border-[#222] flex flex-col md:flex-row justify-between items-end text-[#444]">
+        <h1 class="font-display text-[20vw] leading-none opacity-10 absolute bottom-0 left-0 pointer-events-none">BLUEPRINT</h1>
+        <div class="relative z-10 font-mono text-xs space-y-2">
+            <p id="footer-copy"></p>
+            <p id="footer-brokerage"></p>
+            <p id="footer-address"></p>
+            <p id="footer-privacy"><a href="#" class="hover:text-[var(--red)] transition-colors">Privacy Policy</a></p>
+        </div>
+        <div class="relative z-10 font-mono text-xs text-right">
+            <p>SECURE CONNECTION</p>
+            <p class="text-[var(--green)]">● ONLINE</p>
+        </div>
+    </footer>
+
+
+    <!-- LOGIC -->
+    <script>
+        // 1. SAFE INJECT HELPER
+        function inject(id, content, isHtml = false) {
+            const el = document.getElementById(id);
+            if(el) {
+                if(isHtml) el.innerHTML = content;
+                else el.textContent = content;
+            }
+        }
+
+        // 2. WAIT FOR CONFIG TO LOAD
+        function waitForConfig(callback, maxAttempts = 50) {
+            let attempts = 0;
+            const checkConfig = () => {
+                if (typeof config !== 'undefined' && config.meta) {
+                    callback();
+                } else if (attempts < maxAttempts) {
+                    attempts++;
+                    setTimeout(checkConfig, 100);
+                } else {
+                    console.error('Config.js failed to load after maximum attempts');
+                }
+            };
+            checkConfig();
+        }
+
+        // 3. INITIALIZATION
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForConfig(() => {
+                if(config.settings && config.settings.primaryColor) {
+                    document.documentElement.style.setProperty('--red', config.settings.primaryColor);
+                }
+                
+                // INJECT CONTENT
+                document.title = config.meta.pageTitle;
+                inject('nav-loc', config.event.location);
+                
+                // Update nav spots counter
+                const spotsText = config.event.spotsLeft + " REMAINING";
+                inject('nav-spots', spotsText);
+                
+                // Update nav CTA button text
+                const navCta = document.querySelector('nav a[href="#register"]');
+                if(navCta && config.header && config.header.ctaText) {
+                    navCta.textContent = config.header.ctaText.toUpperCase();
+                }
+                
+                // HERO
+                // Split Headline for animation
+                const headline = config.hero.headline.replace(/<span class='highlight'>/g, "<span class='text-[var(--red)]'>").replace(/<\/span>/g, "</span>");
+                inject('hero-headline-container', headline, true);
+                inject('hero-subtitle', config.hero.subtitle, true);
+
+                // PROBLEMS (Grid)
+                if(config.problems && config.problems.items && config.problems.items.length > 0) {
+                    // Update problems title
+                    if(config.problems.title) {
+                        inject('problems-title', config.problems.title.toUpperCase());
+                    }
+                    
+                    inject('problems-grid', config.problems.items.map((item, i) => `
+                        <div class="bg-[#050505] p-8 group hover:bg-[#111] transition-colors hover-trigger border-l-2 border-transparent hover:border-[var(--red)]">
+                            <span class="font-mono text-xs text-gray-500 mb-4 block">0${i+1} // ISSUE</span>
+                            <p class="text-lg md:text-xl font-light leading-relaxed text-gray-400 group-hover:text-white transition-colors">${item}</p>
+                        </div>
+                    `).join(''), true);
+                }
+
+                // COMPARISON (Horizontal Panels)
+                if(config.comparison && config.comparison.painfulWay && config.comparison.expressWay) {
+                    inject('comp-pain-title', config.comparison.painfulWay.title.toUpperCase());
+                    if(config.comparison.painfulWay.points) {
+                        inject('comp-pain-list', config.comparison.painfulWay.points.map(p => `
+                            <li class="flex gap-6 items-start"><span class="text-red-500 font-bold">✕</span> <span>${p}</span></li>
+                        `).join(''), true);
+                    }
+
+                    inject('comp-gain-title', config.comparison.expressWay.title.toUpperCase());
+                    if(config.comparison.expressWay.points) {
+                        inject('comp-gain-list', config.comparison.expressWay.points.map(p => `
+                            <li class="flex gap-6 items-start border-b border-black/10 pb-4"><span>✦</span> <span>${p}</span></li>
+                        `).join(''), true);
+                    }
+                }
+
+                // BENEFITS (Grid inside Panel)
+                if(config.benefits && config.benefits.items && config.benefits.items.length > 0) {
+                    // Update benefits title
+                    if(config.benefits.title) {
+                        inject('benefits-title', config.benefits.title.toUpperCase());
+                    }
+                    
+                    inject('benefits-grid', config.benefits.items.map((item, i) => `
+                        <div class="p-12 border-b border-r border-black/10 hover:bg-gray-50 transition-colors group">
+                            <span class="font-mono text-[var(--red)] text-xs mb-4 block">MODULE 0${i+1}</span>
+                            <h3 class="font-display text-2xl mb-2">${item.title}</h3>
+                            <p class="text-gray-600 text-sm leading-relaxed">${item.description}</p>
+                        </div>
+                    `).join(''), true);
+                }
+
+                // SPEAKERS (Stack)
+                if(config.speakers && config.speakers.experts && config.speakers.experts.length > 0) {
+                    inject('speakers-title', config.speakers.title.toUpperCase());
+                    const speakerImgs = [
+                        "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=800",
+                        "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800",
+                        "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=800"
+                    ];
+                    const stackHtml = config.speakers.experts.map((exp, i) => `
+                        <div class="card flex flex-col md:flex-row hover-trigger" style="top: ${15 + (i*5)}vh;">
+                            <div class="w-full md:w-1/3 h-64 md:h-auto overflow-hidden grayscale hover:grayscale-0 transition-all duration-500 relative">
+                                <img src="${speakerImgs[i % speakerImgs.length]}" class="w-full h-full object-cover">
+                                <div class="absolute bottom-0 left-0 bg-[var(--red)] text-black px-3 py-1 font-mono text-xs font-bold uppercase">${exp.title}</div>
+                            </div>
+                            <div class="w-full md:w-2/3 p-8 md:p-12 flex flex-col justify-center">
+                                <h3 class="font-display text-4xl md:text-5xl mb-4 uppercase">${exp.name}</h3>
+                                <p class="font-mono text-sm text-gray-400 leading-relaxed">${exp.description}</p>
+                                <div class="mt-6 pt-6 border-t border-white/10 flex flex-wrap gap-3">
+                                    ${exp.points ? exp.points.map(p => `<span class="text-xs border border-white/20 px-2 py-1 rounded">${p}</span>`).join('') : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    inject('speakers-stack', stackHtml, true);
+                }
+
+                // FAQ
+                if(config.faq && config.faq.questions && config.faq.questions.length > 0) {
+                    inject('faq-title', config.faq.title);
+                    const faqHtml = config.faq.questions.map((q, i) => `
+                        <div class="border-b border-white/20 py-8 group cursor-pointer faq-item hover-trigger">
+                            <div class="flex justify-between items-baseline">
+                                <div class="flex items-baseline gap-8">
+                                    <span class="font-mono text-[var(--red)] text-xs">0${i+1}</span>
+                                    <h3 class="font-display text-2xl group-hover:text-[var(--red)] transition-colors">${q.question}</h3>
+                                </div>
+                                <span class="text-2xl font-light group-hover:rotate-45 transition-transform">+</span>
+                            </div>
+                            <div class="h-0 overflow-hidden transition-all duration-500 faq-content">
+                                <p class="pt-6 pl-12 text-gray-400 font-mono leading-relaxed max-w-2xl">${q.answer}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                    inject('faq-list', faqHtml, true);
+                }
+
+                // REGISTRATION
+                inject('reg-title', config.registration.title.toUpperCase());
+                inject('reg-spots', config.registration.urgency, true);
+                
+                // Update form submit button text
+                const submitBtn = document.getElementById('submitBtn');
+                if(submitBtn && config.hero && config.hero.ctaText) {
+                    submitBtn.textContent = config.hero.ctaText.toUpperCase();
+                }
+                
+                // FOOTER
+                inject('footer-copy', config.footer.copyright);
+                inject('footer-brokerage', config.footer.brokerage);
+                
+                // Add footer address
+                if(config.footer.address) {
+                    inject('footer-address', config.footer.address);
+                }
+                
+                // Add privacy policy link
+                const footerPrivacyEl = document.getElementById('footer-privacy');
+                if(footerPrivacyEl && config.footer.privacyPolicy) {
+                    const privacyLink = footerPrivacyEl.querySelector('a');
+                    if(privacyLink) {
+                        privacyLink.href = config.footer.privacyPolicy;
+                    } else {
+                        footerPrivacyEl.innerHTML = `<a href="${config.footer.privacyPolicy}" class="hover:text-[var(--red)] transition-colors">Privacy Policy</a>`;
+                    }
+                }
+
+                // Update preloader text with event title
+                if (config.event && config.event.title) {
+                    const loaderText = document.getElementById('loader-text');
+                    if (loaderText) {
+                        loaderText.textContent = config.event.title.toUpperCase();
+                    }
+                }
+
+                hideEmptySections();
+                
+                // START ANIMATIONS
+                setTimeout(initAnimations, 200);
+                initLogic();
+            });
+        });
+
+        function hideEmptySections() {
+            // Problems section
+            if (!config.problems || !config.problems.items || config.problems.items.length === 0) {
+                const problemsSection = document.querySelector('#problems-grid')?.closest('section');
+                if (problemsSection) problemsSection.style.display = 'none';
+            }
+            
+            // Comparison section (inside horizontal scroll)
+            if (!config.comparison || (!config.comparison.painfulWay && !config.comparison.expressWay)) {
+                const comparisonSection = document.querySelector('#comp-pain-title')?.closest('.panel');
+                if (comparisonSection) {
+                    // Hide the entire horizontal scroll section if comparison is empty
+                    const horizontalSection = document.querySelector('#horizontal-scroll');
+                    if (horizontalSection) horizontalSection.style.display = 'none';
+                }
+            }
+            
+            // Benefits section (inside horizontal scroll)
+            if (!config.benefits || !config.benefits.items || config.benefits.items.length === 0) {
+                const benefitsSection = document.querySelector('#benefits-grid')?.closest('.panel');
+                if (benefitsSection) {
+                    // Hide the entire horizontal scroll section if benefits is empty
+                    const horizontalSection = document.querySelector('#horizontal-scroll');
+                    if (horizontalSection) horizontalSection.style.display = 'none';
+                }
+            }
+            
+            // Speakers section
+            if (!config.speakers || !config.speakers.experts || config.speakers.experts.length === 0) {
+                const speakersSection = document.querySelector('#speakers-stack')?.closest('section');
+                if (speakersSection) speakersSection.style.display = 'none';
+            }
+            
+            // FAQ section
+            if (!config.faq || !config.faq.questions || config.faq.questions.length === 0) {
+                const faqSection = document.querySelector('#faq-list')?.closest('section');
+                if (faqSection) faqSection.style.display = 'none';
+            }
+        }
+
+        // 3. LOGIC
+        function initLogic() {
+            // FAQ
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const content = item.querySelector('.faq-content');
+                    content.style.height = content.style.height ? null : content.scrollHeight + "px";
+                });
+            });
+
+            // Cursor
+            const cursor = document.getElementById('cursor');
+            const cursorText = document.querySelector('.cursor-text');
+            document.addEventListener('mousemove', (e) => {
+                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1, ease: "power2.out" });
+            });
+            
+            document.querySelectorAll('.hover-trigger').forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    document.body.classList.add('hovering');
+                    if(el.dataset.cursor) cursorText.textContent = el.dataset.cursor;
+                });
+                el.addEventListener('mouseleave', () => {
+                    document.body.classList.remove('hovering');
+                    cursorText.textContent = "OPEN";
+                });
+            });
+
+            // Form
+            const form = document.getElementById('registrationForm');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('submitBtn');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+                
+                btn.textContent = "INITIALIZING...";
+                btn.style.backgroundColor = "#222";
+                
+                setTimeout(() => showModal(data), 1000);
+            });
+        }
+
+        function showModal(data) {
+            const modal = document.getElementById('questionModalOverlay');
+            const container = document.getElementById('modal-steps-container');
+            const collectedAnswers = {}; // Store by questionId
+            modal.classList.add('active');
+
+            function renderQ(idx) {
+                container.innerHTML = '';
+                if(idx >= config.modalQuestions.length) {
+                    finish();
+                    return;
+                }
+                const q = config.modalQuestions[idx];
+                const div = document.createElement('div');
+                div.innerHTML = `<h3 class="font-display text-3xl mb-8 leading-tight">${q.questionText}</h3>`;
+                
+                q.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-4 mb-3 border border-white/20 hover:bg-[var(--red)] hover:border-[var(--red)] hover:text-white transition-all font-mono text-sm uppercase tracking-wide text-gray-300";
+                    btn.textContent = `> ${opt.text}`;
+                    btn.onclick = () => {
+                        // Store answer by questionId
+                        collectedAnswers[q.id] = opt.value;
+                        renderQ(idx + 1);
+                    };
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            }
+
+            function finish() {
+                container.innerHTML = `
+                    <div class="text-center py-10">
+                        <div class="text-8xl mb-6 text-[var(--red)]">✓</div>
+                        <h2 class="font-display text-5xl mb-4">ACCESS GRANTED</h2>
+                        <p class="font-mono text-sm text-gray-400">CONFIRMATION SENT TO: ${data.email}</p>
+                    </div>
+                `;
+                
+                // Build payload matching original script.js format
+                const firstName = data.firstName || '';
+                const lastName = data.lastName || '';
+                const fullName = `${firstName} ${lastName}`.trim();
+                
+                // Get primary agent email
+                const primaryAgentEmail = config.contact && config.contact.agents && config.contact.agents.length > 0 
+                    ? config.contact.agents[0].email 
+                    : '';
+                
+                // Map answers to questions array format
+                const questions = [];
+                for (const questionId in collectedAnswers) {
+                    if (collectedAnswers.hasOwnProperty(questionId)) {
+                        const answerValue = collectedAnswers[questionId];
+                        const questionObj = config.modalQuestions.find(q => q.id === questionId);
+                        if (questionObj) {
+                            const optionObj = questionObj.options.find(opt => opt.value === answerValue);
+                            questions.push({
+                                question: questionObj.questionText,
+                                answer: optionObj ? optionObj.text : answerValue
+                            });
+                        }
+                    }
+                }
+                
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    source: "landing-page",
+                    name: fullName,
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: data.email,
+                    phone: data.phone,
+                    submittedAt: new Date().toISOString(),
+                    eventName: config.event?.title || "",
+                    agentEmail: primaryAgentEmail,
+                    questions: questions,
+                    tag: config.deploymentInfo?.tag || "",
+                    ghlWebhookUrl: config.deploymentInfo?.ghlWebhookUrl || "",
+                    webhookUrl: config.deploymentInfo?.webhookUrl || "",
+                    facebookPixelId: config.deploymentInfo?.facebookPixelId || "",
+                    followUpBossEmail: config.deploymentInfo?.followUpBossEmail || ""
+                };
+                
+                // Submit to webhook
+                const webhookUrl = (config.webhook && config.webhook.enabled && config.webhook.url) 
+                    ? config.webhook.url 
+                    : (config.deploymentInfo?.webhookUrl || '');
+                
+                if(webhookUrl) {
+                    fetch(webhookUrl, {
+                        method: 'POST', 
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    }).then(response => {
+                        if(response.ok) {
+                            console.log('Data successfully submitted to webhook');
+                        } else {
+                            console.error('Webhook submission failed:', response.status);
+                        }
+                    }).catch(error => {
+                        console.error('Webhook submission error:', error);
+                    });
+                }
+                
+                // Update spots counter
+                if(config.event && config.event.spotsLeft > 0) {
+                    config.event.spotsLeft--;
+                    const spotsText = config.event.spotsLeft + " REMAINING";
+                    inject('nav-spots', spotsText);
+                    
+                    // Update registration spots display
+                    const regSpotsEl = document.getElementById('reg-spots');
+                    if(regSpotsEl) {
+                        const urgencyText = `Only ${config.event.spotsLeft} <span class='strikethrough'>${config.event.totalSpots}</span> Spots Available`;
+                        inject('reg-spots', urgencyText, true);
+                    }
+                }
+            }
+
+            document.getElementById('modalCloseBtn').onclick = () => {
+                modal.classList.remove('active');
+                const submitBtn = document.getElementById('submitBtn');
+                if(submitBtn) {
+                    submitBtn.textContent = config.hero && config.hero.ctaText ? config.hero.ctaText.toUpperCase() : "SECURE TICKET";
+                    submitBtn.style.backgroundColor = "";
+                }
+            };
+            renderQ(0);
+        }
+
+        // 4. ANIMATIONS
+        function initAnimations() {
+            const lenis = new Lenis({ duration: 1.2 });
+            function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+            requestAnimationFrame(raf);
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Preloader
+            const tl = gsap.timeline();
+            let count = { val: 0 };
+            gsap.to(count, { val: 100, duration: 1.5, onUpdate: () => document.getElementById('loader-counter').innerText = Math.floor(count.val) });
+            
+            tl.to("#loader-bar", { width: "100%", duration: 1.5, ease: "power2.inOut" })
+              .to("#preloader", { yPercent: -100, duration: 0.8, ease: "power4.inOut" });
+
+            // Hero Text
+            gsap.from("#hero-headline-container", {
+                y: 100, opacity: 0, duration: 1.5, ease: "power4.out", delay: 0.5
+            });
+
+            // Horizontal Scroll Section
+            const track = document.getElementById("horizontal-track");
+            const container = document.getElementById("horizontal-scroll");
+            
+            gsap.to(track, {
+                x: () => -(track.scrollWidth - window.innerWidth),
+                ease: "none",
+                scrollTrigger: {
+                    trigger: container,
+                    pin: true,
+                    scrub: 1,
+                    end: () => "+=" + track.scrollWidth
+                }
+            });
+
+            // Parallax Image
+            gsap.to(".parallax-bg", {
+                yPercent: 30,
+                ease: "none",
+                scrollTrigger: { trigger: "header", start: "top top", end: "bottom top", scrub: true }
+            });
+        }
+    </script>
+    
+    <style>
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
+    </style>
+</body>
+</html>

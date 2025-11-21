@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts: Playfair Display (Editorial) & Plus Jakarta Sans (Modern) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- External Config -->
+    <script src="config.js"></script>
+
+    <style>
+        :root {
+            --bg: #F5F4F0; /* Warm Sand */
+            --dark: #141D1A; /* Deep Forest Green */
+            --accent: #C4A484; /* Bronze */
+            --white: #FFFFFF;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--dark);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+        }
+        body.loaded { opacity: 1; }
+
+        .serif { font-family: 'Playfair Display', serif; }
+
+        /* SMOOTH SCROLL */
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto; }
+        .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+        .lenis.lenis-stopped { overflow: hidden; }
+
+        /* CUSTOM CURSOR */
+        .cursor-dot, .cursor-outline {
+            position: fixed; top: 0; left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%; z-index: 9999;
+            pointer-events: none;
+        }
+        .cursor-dot { width: 8px; height: 8px; background-color: var(--dark); }
+        .cursor-outline {
+            width: 40px; height: 40px;
+            border: 1px solid var(--dark);
+            transition: width 0.2s, height 0.2s;
+        }
+
+        /* TEXT REVEAL UTILS */
+        .reveal-wrap { overflow: hidden; display: inline-block; vertical-align: bottom; }
+        .reveal-text { transform: translateY(100%); display: inline-block; }
+
+        /* HORIZONTAL SCROLL SECTION */
+        .h-scroll-wrapper {
+            display: flex;
+            flex-wrap: nowrap;
+            height: 100%;
+            padding: 0 10vw;
+        }
+        .h-scroll-item {
+            width: 40vw;
+            height: 100%;
+            flex-shrink: 0;
+            padding-right: 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* IMAGE MASKS */
+        .mask-container { overflow: hidden; position: relative; }
+        .mask-img { transform: scale(1.2); transition: transform 1.5s ease-out; }
+        .mask-container:hover .mask-img { transform: scale(1.05); }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(245, 244, 240, 0.98);
+            z-index: 10000; display: none; justify-content: center; align-items: center;
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-content { max-width: 600px; width: 90%; position: relative; }
+        
+        .modal-option-btn {
+            display: block; width: 100%;
+            border-bottom: 1px solid rgba(20, 29, 26, 0.2);
+            padding: 1.5rem 0; text-align: left;
+            font-family: 'Playfair Display', serif; font-size: 1.5rem;
+            transition: all 0.3s; color: var(--dark); opacity: 0.5;
+        }
+        .modal-option-btn:hover { opacity: 1; padding-left: 2rem; border-color: var(--dark); }
+
+        /* UTILITIES */
+        .highlight { color: var(--accent); font-style: italic; }
+        .strikethrough { text-decoration: line-through; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+    <!-- CURSOR -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- NAV -->
+    <nav class="fixed w-full z-50 top-0 px-6 py-6 flex justify-between items-center transition-all duration-300 opacity-0" id="navbar">
+        <div class="text-xl font-semibold tracking-tight flex items-center gap-3">
+            <span class="w-2 h-2 bg-[var(--dark)] rounded-full animate-pulse"></span>
+            <span id="nav-title" class="uppercase tracking-[0.2em] text-xs font-bold text-[var(--dark)]"></span>
+        </div>
+        <a href="#register" class="hidden md:block px-8 py-3 rounded-full text-xs uppercase tracking-widest font-medium border border-[var(--dark)] hover:bg-[var(--dark)] hover:text-white transition-all duration-500">
+            Reserve Seat
+        </a>
+    </nav>
+
+    <!-- HERO -->
+    <header class="relative min-h-screen flex items-center px-6 md:px-20 pt-24 border-b border-[#141D1A]/10">
+        <div class="grid md:grid-cols-12 gap-16 w-full items-center">
+            
+            <div class="md:col-span-7 relative z-10 order-2 md:order-1">
+                <div class="inline-block border-b border-[var(--dark)] pb-1 mb-10">
+                    <span class="text-xs uppercase tracking-[0.3em] font-medium" id="hero-badge"></span>
+                </div>
+                
+                <h1 class="serif text-5xl md:text-8xl lg:text-8xl leading-[1.05] mb-10 text-[var(--dark)]" id="hero-headline"></h1>
+
+                <p class="max-w-lg text-lg text-gray-600 leading-relaxed mb-12 font-light" id="hero-subtitle"></p>
+
+                <div class="flex flex-col md:flex-row items-start md:items-center gap-8">
+                    <a href="#register" class="bg-[var(--dark)] text-[var(--white)] px-12 py-5 rounded-full text-xs uppercase tracking-[0.2em] font-medium hover:bg-[var(--accent)] transition-all duration-500" id="hero-cta"></a>
+                    <div class="flex items-center gap-4">
+                        <div class="flex -space-x-4">
+                            <img class="w-12 h-12 rounded-full border-2 border-[#F5F4F0] object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100" alt="">
+                            <img class="w-12 h-12 rounded-full border-2 border-[#F5F4F0] object-cover" src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=100" alt="">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-wider opacity-50" id="spots-badge"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-5 h-[50vh] md:h-[80vh] relative order-1 md:order-2">
+                <div class="absolute inset-0 mask-container rounded-t-[150px] overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop" 
+                         class="w-full h-full object-cover mask-img parallax-img" alt="Modern Architecture">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- THE CONTEXT (PROBLEMS) -->
+    <section class="py-32 px-6 md:px-20">
+        <div class="grid md:grid-cols-12 gap-12">
+            <div class="md:col-span-4">
+                <span class="text-xs uppercase tracking-[0.2em] text-[var(--accent)] mb-4 block">01 — The Context</span>
+                <h2 class="serif text-4xl md:text-5xl leading-tight" id="problems-title"></h2>
+            </div>
+            <div class="md:col-span-7 md:col-start-6" id="problems-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- HORIZONTAL SCROLL GALLERY (BENEFITS) -->
+    <section id="scroll-section" class="h-screen bg-[var(--dark)] text-[var(--white)] overflow-hidden relative flex items-center">
+        <div class="absolute top-12 left-12 z-10">
+            <h2 class="serif text-4xl" id="benefits-title"></h2>
+            <p class="text-white/50 mt-2 text-sm font-mono uppercase">Scroll to Explore</p>
+        </div>
+        
+        <div class="h-scroll-wrapper" id="benefits-track">
+            <!-- JS Injected -->
+        </div>
+    </section>
+
+    <!-- THE DICHOTOMY (COMPARISON) -->
+    <section class="py-32 px-6 md:px-20 bg-[#F5F4F0]">
+        <div class="mb-20 text-center">
+            <span class="text-xs uppercase tracking-[0.2em] text-[var(--accent)]">03 — The Choice</span>
+            <h2 class="serif text-5xl mt-4">Two Paths Forward.</h2>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-0 border border-[var(--dark)]/10">
+            <!-- Painful Way -->
+            <div class="p-12 md:p-16 border-b md:border-b-0 md:border-r border-[var(--dark)]/10 bg-white/50 hover:bg-white transition-colors duration-500">
+                <h3 class="serif text-3xl mb-2 text-gray-400" id="comp-pain-title">The Old Way</h3>
+                <p class="text-sm uppercase tracking-widest text-gray-400 mb-10" id="comp-pain-sub"></p>
+                <ul class="space-y-8" id="comp-pain-list"></ul>
+            </div>
+            
+            <!-- Express Way -->
+            <div class="p-12 md:p-16 bg-[var(--dark)] text-[var(--white)] relative overflow-hidden group">
+                <div class="absolute inset-0 bg-[var(--accent)] opacity-0 group-hover:opacity-10 transition-opacity duration-700"></div>
+                <h3 class="serif text-3xl mb-2" id="comp-gain-title">The Blueprint</h3>
+                <p class="text-sm uppercase tracking-widest text-[var(--accent)] mb-10" id="comp-gain-sub"></p>
+                <ul class="space-y-8" id="comp-gain-list"></ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- THE COUNCIL (SPEAKERS) -->
+    <section class="py-32 px-6 md:px-20">
+        <div class="grid md:grid-cols-12 gap-12 mb-20">
+            <div class="md:col-span-5">
+                <span class="text-xs uppercase tracking-[0.2em] text-[var(--accent)]">04 — The Council</span>
+                <h2 class="serif text-6xl mt-4" id="speakers-title"></h2>
+            </div>
+            <div class="md:col-span-6 md:col-start-7 flex items-end">
+                <p class="text-xl font-light text-gray-600 leading-relaxed" id="speakers-subtitle"></p>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8" id="speakers-grid">
+            <!-- JS Injected -->
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-32 px-6 md:px-20 bg-white border-t border-gray-100">
+        <div class="grid md:grid-cols-12 gap-16">
+            <div class="md:col-span-4">
+                <h2 class="serif text-5xl mb-6" id="faq-title"></h2>
+                <p class="text-gray-500" id="faq-subtitle"></p>
+            </div>
+            <div class="md:col-span-7 md:col-start-6 space-y-8" id="faq-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- REGISTRATION -->
+    <section id="register" class="py-32 px-6 md:px-20 bg-[#F5F4F0] relative border-t border-gray-200">
+        <div class="max-w-4xl mx-auto text-center mb-16">
+            <span class="text-xs uppercase tracking-[0.3em] text-[var(--dark)] block mb-6">Final Call</span>
+            <h2 class="serif text-6xl md:text-8xl text-[var(--dark)]" id="reg-title"></h2>
+            <p class="text-xl mt-6 font-light text-gray-600" id="reg-note"></p>
+        </div>
+
+        <div class="max-w-xl mx-auto bg-white p-10 md:p-16 shadow-2xl border border-gray-100 relative">
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[var(--dark)] text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest">
+                <span id="reg-spots"></span>
+            </div>
+
+            <form id="registrationForm" class="space-y-8">
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Full Name</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" name="firstName" required placeholder="Jane" class="w-full border-b border-gray-200 py-3 focus:outline-none focus:border-[var(--dark)] transition-colors bg-transparent font-serif text-xl placeholder:font-sans placeholder:text-sm">
+                        <input type="text" name="lastName" required placeholder="Doe" class="w-full border-b border-gray-200 py-3 focus:outline-none focus:border-[var(--dark)] transition-colors bg-transparent font-serif text-xl placeholder:font-sans placeholder:text-sm">
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Contact</label>
+                    <input type="email" name="email" required placeholder="jane@example.com" class="w-full border-b border-gray-200 py-3 focus:outline-none focus:border-[var(--dark)] transition-colors bg-transparent font-serif text-xl placeholder:font-sans placeholder:text-sm">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">Mobile</label>
+                    <input type="tel" name="phone" required placeholder="(555) 000-0000" class="w-full border-b border-gray-200 py-3 focus:outline-none focus:border-[var(--dark)] transition-colors bg-transparent font-serif text-xl placeholder:font-sans placeholder:text-sm">
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-[var(--dark)] text-white py-5 text-sm uppercase tracking-[0.2em] hover:bg-[var(--accent)] transition-colors duration-500 mt-8">
+                    Reserve Seat
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="questionModalOverlay">
+        <div class="modal-content text-center">
+            <button id="modalCloseBtn" class="absolute top-4 right-4 text-xl opacity-50 hover:opacity-100">✕</button>
+            <div id="modal-steps-container" class="p-8"></div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-[var(--dark)] text-white py-20 px-6 md:px-20">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-white/10 pb-10 mb-10">
+            <h2 class="serif text-3xl">Blueprint.</h2>
+            <div class="text-right mt-6 md:mt-0">
+                <p class="text-xs uppercase tracking-widest opacity-50" id="footer-brokerage"></p>
+                <p class="text-sm mt-2 opacity-70" id="footer-address"></p>
+            </div>
+        </div>
+        <div class="flex justify-between items-center text-xs text-gray-500 uppercase tracking-widest">
+            <p id="footer-copy"></p>
+            <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <script>
+        /**
+         * 0. CONFIG LOADING
+         */
+        function waitForConfig(callback) {
+            if (typeof config !== 'undefined') {
+                callback();
+            } else {
+                // Check if config.js failed to load
+                setTimeout(() => {
+                    if (typeof config === 'undefined') {
+                        console.error('Config.js failed to load! Please ensure config.js exists and is accessible.');
+                        // Show error message to user
+                        document.body.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100vh; font-family: monospace; padding: 2rem; text-align: center;"><div><h1 style="color: red; margin-bottom: 1rem;">Configuration Error</h1><p>config.js file not found or failed to load.</p><p style="margin-top: 1rem; color: #666;">Please ensure config.js exists in the same directory.</p></div></div>';
+                        return;
+                    }
+                    callback();
+                }, 100);
+            }
+        }
+
+        /**
+         * 1. CONTENT INJECTION
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForConfig(() => {
+                injectContent();
+                
+                // Allow DOM to settle before animations
+                setTimeout(() => {
+                    document.body.classList.add('loaded');
+                    initLogic();
+                    initAnimations();
+                }, 200);
+            });
+        });
+
+        function injectContent() {
+            if (typeof config === 'undefined') {
+                console.error('Config not loaded');
+                return;
+            }
+            
+            document.title = config.meta.pageTitle;
+            
+            // Nav
+            document.getElementById('nav-title').textContent = config.event.title;
+            const navCta = document.querySelector('nav a[href="#register"]');
+            if (navCta && config.header && config.header.ctaText) {
+                navCta.textContent = config.header.ctaText;
+            }
+
+            // Hero
+            document.getElementById('hero-badge').textContent = config.hero.badge;
+            document.getElementById('hero-headline').innerHTML = config.hero.headline;
+            document.getElementById('hero-subtitle').innerHTML = config.hero.subtitle;
+            document.getElementById('hero-cta').textContent = config.hero.ctaText;
+            document.getElementById('spots-badge').textContent = config.event.spotsLeft + " spots left";
+
+            // Problems
+            if(config.problems && config.problems.items && config.problems.items.length > 0) {
+                document.getElementById('problems-title').textContent = config.problems.title;
+                document.getElementById('problems-list').innerHTML = config.problems.items.map((item, i) => `
+                    <div class="border-b border-gray-300 py-6 flex gap-6 items-start group">
+                        <span class="text-xs font-bold opacity-30 mt-1">0${i+1}</span>
+                        <p class="text-lg font-light leading-relaxed group-hover:text-[var(--dark)] transition-colors">${item}</p>
+                    </div>
+                `).join('');
+            }
+
+            // Horizontal Gallery (Benefits)
+            if(config.benefits && config.benefits.items && config.benefits.items.length > 0) {
+                if(config.solutions && config.solutions.title) {
+                    document.getElementById('benefits-title').textContent = config.solutions.title;
+                }
+                const stockImages = [
+                    "https://images.unsplash.com/photo-1631679706909-1844bbd07221?q=80&w=800&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=800&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=800&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=800&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1616137497850-8c611b007e46?q=80&w=800&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=800&auto=format&fit=crop"
+                ];
+                
+                // Use Benefits array for the cards
+                document.getElementById('benefits-track').innerHTML = config.benefits.items.map((item, i) => `
+                    <div class="h-scroll-item group">
+                        <div class="aspect-[4/3] overflow-hidden mb-6 grayscale group-hover:grayscale-0 transition-all duration-700">
+                            <img src="${stockImages[i]}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-1000">
+                        </div>
+                        <span class="text-xs uppercase tracking-[0.2em] text-[var(--accent)] mb-2">Phase 0${i+1}</span>
+                        <h3 class="serif text-3xl mb-4">${item.title}</h3>
+                        <p class="text-white/60 font-light leading-relaxed">${item.description}</p>
+                    </div>
+                `).join('');
+            }
+
+            // Comparison
+            if(config.comparison && config.comparison.painfulWay && config.comparison.expressWay) {
+                document.getElementById('comp-pain-title').textContent = config.comparison.painfulWay.title;
+                if(config.comparison.painfulWay.subtitle) {
+                    document.getElementById('comp-pain-sub').textContent = config.comparison.painfulWay.subtitle;
+                }
+                if(config.comparison.painfulWay.points) {
+                    document.getElementById('comp-pain-list').innerHTML = config.comparison.painfulWay.points.map(p => 
+                        `<li class="flex gap-4 text-gray-500 font-light"><span class="opacity-30 mt-1">✕</span> <span>${p}</span></li>`
+                    ).join('');
+                }
+
+                document.getElementById('comp-gain-title').textContent = config.comparison.expressWay.title;
+                if(config.comparison.expressWay.subtitle) {
+                    document.getElementById('comp-gain-sub').textContent = config.comparison.expressWay.subtitle;
+                }
+                if(config.comparison.expressWay.points) {
+                    document.getElementById('comp-gain-list').innerHTML = config.comparison.expressWay.points.map(p => 
+                        `<li class="flex gap-4 font-medium"><span class="text-[var(--accent)] mt-1">●</span> <span>${p}</span></li>`
+                    ).join('');
+                }
+            }
+
+            // Speakers
+            if(config.speakers && config.speakers.experts && config.speakers.experts.length > 0) {
+                document.getElementById('speakers-title').textContent = config.speakers.title;
+                document.getElementById('speakers-subtitle').innerHTML = config.speakers.subtitle;
+                const speakersStock = [
+                    "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=600&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=600&auto=format&fit=crop",
+                    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600&auto=format&fit=crop"
+                ];
+                document.getElementById('speakers-grid').innerHTML = config.speakers.experts.map((exp, i) => `
+                    <div class="group">
+                        <div class="aspect-[3/4] overflow-hidden mb-6 bg-gray-100">
+                            <img src="${speakersStock[i]}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 mix-blend-multiply">
+                        </div>
+                        <h3 class="serif text-2xl mb-1">${exp.name}</h3>
+                        <p class="text-xs uppercase tracking-widest text-[var(--accent)] mb-3">${exp.title}</p>
+                        <p class="text-sm text-gray-500 leading-relaxed font-light">${exp.description}</p>
+                    </div>
+                `).join('');
+            }
+
+            // FAQ
+            if(config.faq && config.faq.questions && config.faq.questions.length > 0) {
+                document.getElementById('faq-title').textContent = config.faq.title;
+                document.getElementById('faq-subtitle').textContent = config.faq.subtitle;
+                document.getElementById('faq-list').innerHTML = config.faq.questions.map(q => `
+                    <div class="border-b border-gray-100 py-6">
+                        <h3 class="serif text-xl mb-3 text-[var(--dark)]">${q.question}</h3>
+                        <p class="text-gray-500 font-light leading-relaxed">${q.answer}</p>
+                    </div>
+                `).join('');
+            }
+
+            // Register
+            document.getElementById('reg-title').textContent = config.registration.title;
+            document.getElementById('reg-note').textContent = config.registration.note;
+            document.getElementById('reg-spots').innerHTML = config.header.spotsAvailable;
+            
+            // Add registration urgency if element exists
+            const regUrgency = document.getElementById('reg-urgency');
+            if (regUrgency && config.registration && config.registration.urgency) {
+                regUrgency.innerHTML = config.registration.urgency;
+            }
+            
+            hideEmptySections();
+            
+            // Form submit button
+            const submitBtn = document.getElementById('submitBtn');
+            if (submitBtn && config.registration && config.registration.title) {
+                submitBtn.textContent = config.registration.title;
+            }
+
+            // Footer
+            document.getElementById('footer-brokerage').textContent = config.footer.brokerage || '';
+            document.getElementById('footer-address').textContent = config.footer.address || '';
+            document.getElementById('footer-copy').textContent = config.footer.copyright || '';
+            
+            // Privacy policy link
+            const privacyLink = document.querySelector('footer a[href="#"]');
+            if (privacyLink && config.footer && config.footer.privacyPolicy) {
+                privacyLink.href = config.footer.privacyPolicy;
+            }
+        }
+
+        function hideEmptySections() {
+            // Problems section
+            if (!config.problems || !config.problems.items || config.problems.items.length === 0) {
+                const problemsSection = document.querySelector('#problems-list')?.closest('section');
+                if (problemsSection) problemsSection.style.display = 'none';
+            }
+            
+            // Benefits section (horizontal scroll)
+            if (!config.benefits || !config.benefits.items || config.benefits.items.length === 0) {
+                const benefitsSection = document.querySelector('#scroll-section');
+                if (benefitsSection) benefitsSection.style.display = 'none';
+            }
+            
+            // Comparison section
+            if (!config.comparison || (!config.comparison.painfulWay && !config.comparison.expressWay)) {
+                const comparisonSection = document.querySelector('#comp-pain-title')?.closest('section');
+                if (comparisonSection) comparisonSection.style.display = 'none';
+            }
+            
+            // Speakers section
+            if (!config.speakers || !config.speakers.experts || config.speakers.experts.length === 0) {
+                const speakersSection = document.querySelector('#speakers-grid')?.closest('section');
+                if (speakersSection) speakersSection.style.display = 'none';
+            }
+            
+            // FAQ section
+            if (!config.faq || !config.faq.questions || config.faq.questions.length === 0) {
+                const faqSection = document.querySelector('#faq-list')?.closest('section');
+                if (faqSection) faqSection.style.display = 'none';
+            }
+        }
+
+        /**
+         * 2. INTERACTION LOGIC
+         */
+        function initLogic() {
+            // Custom Cursor
+            const cursorDot = document.querySelector('.cursor-dot');
+            const cursorOutline = document.querySelector('.cursor-outline');
+            window.addEventListener('mousemove', (e) => {
+                const posX = e.clientX;
+                const posY = e.clientY;
+                cursorDot.style.left = `${posX}px`;
+                cursorDot.style.top = `${posY}px`;
+                cursorOutline.animate({ left: `${posX}px`, top: `${posY}px` }, { duration: 500, fill: "forwards" });
+            });
+
+            // Form
+            const form = document.getElementById('registrationForm');
+            const collectedData = {};
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('submitBtn');
+                const formData = new FormData(form);
+                
+                btn.textContent = "Processing...";
+                collectedData.firstName = formData.get('firstName');
+                collectedData.lastName = formData.get('lastName');
+                collectedData.email = formData.get('email');
+                collectedData.phone = formData.get('phone');
+
+                setTimeout(() => {
+                    showModal(collectedData);
+                }, 800);
+            });
+        }
+
+        function showModal(data) {
+            const modal = document.getElementById('questionModalOverlay');
+            const container = document.getElementById('modal-steps-container');
+            const answers = [];
+            modal.classList.add('visible');
+
+            function renderQ(idx) {
+                container.innerHTML = '';
+                
+                if(idx >= config.modalQuestions.length) {
+                    finish();
+                    return;
+                }
+
+                const q = config.modalQuestions[idx];
+                const div = document.createElement('div');
+                div.innerHTML = `<h3 class="serif text-3xl mb-8 text-[var(--dark)]">${q.questionText}</h3>`;
+                
+                q.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'modal-option-btn';
+                    btn.textContent = opt.text;
+                    btn.onclick = () => {
+                        // Store answer with questionId and proper format
+                        answers.push({ 
+                            questionId: q.id,
+                            question: q.questionText, 
+                            answerValue: opt.value,
+                            answerText: opt.text
+                        });
+                        renderQ(idx + 1);
+                    }
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            }
+
+            function finish() {
+                container.innerHTML = `
+                    <div class="py-10">
+                        <h3 class="serif text-4xl mb-4">You're On The List.</h3>
+                        <p class="text-gray-500 font-light">Check your inbox for location details.</p>
+                    </div>
+                `;
+                
+                // Get primary agent email from contact section
+                const primaryAgentEmail = config.contact?.agents?.[0]?.email || "";
+                
+                // Combine form data with question answers - match original script.js payload structure
+                const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+                
+                // Map answers to match original format: { question, answer } where answer is the text, not value
+                const mappedQuestions = answers.map(ans => {
+                    return {
+                        question: ans.question || ans.questionText,
+                        answer: ans.answerText || ans.answerValue
+                    };
+                });
+
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    source: "landing-page",
+                    name: fullName,
+                    firstName: data.firstName || '',
+                    lastName: data.lastName || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    submittedAt: new Date().toISOString(),
+                    eventName: config.event?.title || "First Time Buyer Blueprint",
+                    agentEmail: primaryAgentEmail,
+                    questions: mappedQuestions,
+                    // Deployment info fields for form submissions
+                    tag: config.deploymentInfo?.tag || "",
+                    ghlWebhookUrl: config.deploymentInfo?.ghlWebhookUrl || "",
+                    webhookUrl: config.deploymentInfo?.webhookUrl || "",
+                    facebookPixelId: config.deploymentInfo?.facebookPixelId || "",
+                    followUpBossEmail: config.deploymentInfo?.followUpBossEmail || ""
+                };
+                
+                console.log("Submitting Payload:", payload);
+                
+                // Submit to webhook if configured - use config.webhook.url (matching original script.js logic)
+                let webhookUrl = null;
+                if (config.webhook && config.webhook.enabled && config.webhook.url && 
+                    config.webhook.url !== "https://hook.us1.make.com/your-webhook-url") {
+                    webhookUrl = config.webhook.url;
+                } else if (config.deploymentInfo && config.deploymentInfo.webhookUrl) {
+                    // Fallback to deploymentInfo.webhookUrl if webhook.url not configured
+                    webhookUrl = config.deploymentInfo.webhookUrl;
+                }
+                
+                if (webhookUrl && webhookUrl.trim() !== '') {
+                    fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload),
+                        mode: 'cors'
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            console.log("Data successfully submitted to webhook");
+                        } else {
+                            console.error("Webhook submission failed:", response.status);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Webhook submission error:", err);
+                        // Still show success to user even if webhook fails
+                    });
+                } else {
+                    console.log("Webhook not configured, showing success modal");
+                }
+                
+                // Update spots counter
+                if (typeof config !== 'undefined' && config.event && config.event.spotsLeft > 0) {
+                    config.event.spotsLeft--;
+                    const spotsBadge = document.getElementById('spots-badge');
+                    if (spotsBadge) {
+                        spotsBadge.textContent = config.event.spotsLeft + " spots left";
+                    }
+                    
+                    // Update reg-spots display
+                    const regSpots = document.getElementById('reg-spots');
+                    if (regSpots && config.header) {
+                        regSpots.innerHTML = `Only ${config.event.spotsLeft} <span class="strikethrough">${config.event.totalSpots}</span> Spots Available`;
+                    }
+                }
+            }
+
+            document.getElementById('modalCloseBtn').onclick = () => {
+                modal.classList.remove('visible');
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn && config.registration && config.registration.title) {
+                    submitBtn.textContent = config.registration.title;
+                } else {
+                    submitBtn.textContent = "Reserve Seat";
+                }
+                submitBtn.disabled = false;
+            };
+
+            renderQ(0);
+        }
+
+        /**
+         * 3. ANIMATIONS (GSAP + LENIS)
+         */
+        function initAnimations() {
+            const lenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+            function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+            requestAnimationFrame(raf);
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Nav Fade
+            gsap.to("#navbar", { opacity: 1, duration: 1, delay: 0.5 });
+
+            // Hero Parallax
+            gsap.to(".parallax-img", {
+                yPercent: 20,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "header",
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: true
+                }
+            });
+
+            // Horizontal Scroll Gallery
+            const sections = gsap.utils.toArray(".h-scroll-item");
+            const track = document.getElementById("benefits-track");
+            
+            // Calculate total width needed
+            const totalWidth = track.scrollWidth;
+            
+            gsap.to(sections, {
+                xPercent: -100 * (sections.length - 1),
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#scroll-section",
+                    pin: true,
+                    scrub: 1,
+                    // Adjust end based on how many items to control speed
+                    end: () => "+=" + document.querySelector("#scroll-section").offsetWidth * 2
+                }
+            });
+
+            // Text Reveals
+            gsap.from("#hero-headline", { y: 50, opacity: 0, duration: 1.5, ease: "power4.out", delay: 0.2 });
+            gsap.from("#hero-subtitle", { y: 20, opacity: 0, duration: 1, delay: 0.5 });
+            gsap.from("#hero-cta", { y: 20, opacity: 0, duration: 1, delay: 0.7 });
+
+        }
+    </script>
+</body>
+</html>

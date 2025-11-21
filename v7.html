@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Blueprint | Kinetic Edition</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP & Lenis -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- Fonts: Clash Display & Satoshi (Modern / Architectural) -->
+    <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,400,500,600,700&f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet">
+    
+    <!-- External Config -->
+    <script src="config.js"></script>
+
+    <style>
+        :root {
+            --bg: #EAEAEA;
+            --text: #111111;
+            --accent: #2563EB; /* Signal Blue */
+            --grid-line: rgba(0,0,0,0.08);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Satoshi', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        .font-display {
+            font-family: 'Clash Display', sans-serif;
+        }
+
+        /* CUSTOM CURSOR */
+        #cursor {
+            position: fixed; top: 0; left: 0; width: 16px; height: 16px;
+            background: var(--accent); border-radius: 50%; pointer-events: none;
+            z-index: 9999; mix-blend-mode: difference;
+            transition: transform 0.1s;
+        }
+        body.hover-active #cursor { transform: scale(4); background: white; }
+
+        /* GRID BACKGROUND */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+                              linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+        }
+
+        /* X-RAY COMPARISON EFFECT */
+        .comparison-wrapper {
+            position: relative; width: 100%; height: 100%;
+            overflow: hidden; cursor: crosshair;
+        }
+        .layer-top {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #1a1a1a; color: #fff; z-index: 2;
+            clip-path: circle(0% at 50% 50%); /* JS updates this */
+            display: flex; align-items: center; justify-content: center;
+        }
+        .layer-bottom {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #EAEAEA; color: #111; z-index: 1;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* SPEAKER FILM STRIP */
+        .film-strip-wrapper {
+            display: flex; width: fit-content; height: 100%;
+        }
+        .film-slide {
+            width: 25vw; min-width: 350px; height: 100%;
+            border-right: 1px solid rgba(0,0,0,0.1);
+            flex-shrink: 0; position: relative;
+            transition: background 0.3s;
+        }
+        .film-slide:hover { background: #fff; }
+
+        /* BENTO GRID BENEFITS */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 1.5rem;
+        }
+        @media(min-width: 768px) {
+            .bento-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 300px); }
+            .bento-item:nth-child(1) { grid-column: span 2; }
+            .bento-item:nth-child(4) { grid-column: span 2; }
+        }
+        .bento-item {
+            background: white; padding: 2rem; border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 1rem; position: relative; overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .bento-item:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.05); }
+
+        /* UTILS */
+        .reveal-text span { display: block; transform: translateY(100%); }
+        .input-minimal {
+            width: 100%; background: transparent; border: none; border-bottom: 2px solid #ccc;
+            padding: 1rem 0; font-size: 1.5rem; font-family: 'Clash Display', sans-serif;
+            transition: border-color 0.3s;
+        }
+        .input-minimal:focus { outline: none; border-color: var(--accent); }
+
+        /* MARQUEE ANIMATION */
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* CORNER CUT CARD */
+        .corner-card {
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% 85%, 
+                92% 100%, 
+                0 100%
+            );
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        .corner-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--accent);
+            transform: translateY(-5px);
+        }
+
+        /* SCANLINE */
+        .scanline {
+            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--accent);
+            opacity: 0;
+            box-shadow: 0 0 10px var(--accent);
+        }
+        .corner-card:hover .scanline {
+            animation: scan 1.5s linear infinite;
+            opacity: 1;
+        }
+        @keyframes scan {
+            0% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        /* OPERATION GRID */
+        .op-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1px;
+            background: rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .op-cell {
+            background: #EAEAEA;
+            padding: 2rem;
+            transition: background 0.3s;
+        }
+        .op-cell:hover {
+            background: #FFFFFF;
+        }
+        @media(min-width: 768px) {
+            .op-grid { grid-template-columns: repeat(4, 1fr); }
+            .op-cell.large { grid-column: span 2; }
+        }
+        
+        /* MODAL */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            z-index: 10000; display: none; opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+    <div id="cursor"></div>
+
+    <!-- DYNAMIC ISLAND NAV -->
+    <div class="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-4xl">
+        <nav class="bg-[#111] text-white rounded-full px-6 py-4 flex justify-between items-center shadow-2xl transition-all duration-500" id="nav-island">
+            <div class="font-display font-bold text-xl tracking-tight hover-trigger" id="nav-logo">BLUEPRINT.</div>
+            <div class="hidden md:flex gap-8 text-xs font-medium text-gray-400">
+                <span id="nav-date">LOADING...</span>
+                <span class="w-px h-4 bg-gray-700"></span>
+                <span id="nav-spots" class="text-white">LOADING...</span>
+            </div>
+            <a href="#register" class="bg-white text-black px-5 py-2 rounded-full text-xs font-bold uppercase hover:bg-[var(--accent)] hover:text-white transition-colors hover-trigger" id="nav-btn">
+                Get Access
+            </a>
+        </nav>
+    </div>
+
+    <!-- HERO SECTION -->
+    <header class="relative min-h-screen flex flex-col justify-center px-6 md:px-24 pt-32 overflow-hidden">
+        <!-- Big typography background -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none opacity-[0.03]">
+            <h1 class="font-display text-[30vw] leading-none">FUTURE</h1>
+        </div>
+
+        <div class="relative z-10 max-w-5xl">
+            <div class="inline-flex items-center gap-3 mb-8 border border-black/10 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-full">
+                <span class="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse"></span>
+                <span class="text-xs font-bold tracking-widest uppercase" id="hero-badge">LOADING...</span>
+            </div>
+
+            <h1 class="font-display text-6xl md:text-9xl font-semibold leading-[0.9] mb-10 tracking-tight" id="hero-headline">
+                <!-- JS -->
+            </h1>
+            
+            <p class="text-[var(--accent)] font-bold uppercase tracking-widest text-sm mb-6" id="hero-urgency"></p>
+
+            <div class="grid md:grid-cols-12 gap-12 mt-12 border-t border-black/10 pt-12">
+                <div class="md:col-span-5">
+                    <p class="text-lg md:text-xl text-gray-600 font-medium leading-relaxed" id="hero-subtitle"></p>
+                </div>
+                <div class="md:col-span-7 flex flex-col justify-between items-start md:items-end">
+                    <a href="#register" id="hero-cta" class="group relative inline-flex items-center justify-center px-8 py-4 font-display text-lg tracking-widest text-white transition-all duration-200 bg-[#111] rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 hover-trigger">
+                        <span class="absolute inset-0 transition-all duration-100 ease-out rounded-full shadow-xl bg-[var(--accent)] group-hover:scale-105 opacity-0 group-hover:opacity-100"></span>
+                        <span class="relative flex gap-3 items-center">
+                            <span id="hero-cta-text">Initialize Protocol</span> <i class="fa-solid fa-arrow-right -rotate-45 group-hover:rotate-0 transition-transform"></i>
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- PROBLEM / CONTEXT (Accordion) -->
+    <section class="py-32 px-6 md:px-24 border-t border-black/5">
+        <div class="grid md:grid-cols-12 gap-16">
+            <div class="md:col-span-4 sticky top-32 h-fit">
+                <span class="text-xs font-bold text-[var(--accent)] uppercase tracking-widest mb-4 block">01 / The Context</span>
+                <h2 class="font-display text-5xl md:text-6xl font-medium leading-tight" id="problems-title"></h2>
+            </div>
+            <div class="md:col-span-8 space-y-4" id="problems-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+        <!-- Success Statement (Kinetic Marquee + Big Type) -->
+        <div class="mt-24 relative overflow-hidden py-24 bg-black text-white -mx-6 md:-mx-24 px-6 md:px-24">
+            <!-- Background Marquee -->
+            <div class="marquee-container absolute top-0 left-0 w-full h-full flex items-center opacity-10 pointer-events-none select-none">
+                <div class="marquee-content font-display font-bold text-[15vw] leading-none whitespace-nowrap">
+                    SUCCESS STRATEGY GROWTH SCALE SUCCESS STRATEGY GROWTH SCALE
+                </div>
+                <div class="marquee-content font-display font-bold text-[15vw] leading-none whitespace-nowrap">
+                    SUCCESS STRATEGY GROWTH SCALE SUCCESS STRATEGY GROWTH SCALE
+                </div>
+            </div>
+            
+            <!-- Content -->
+            <div class="relative z-10 max-w-4xl mx-auto text-center">
+                <span class="text-[var(--accent)] font-mono text-xs uppercase tracking-widest mb-6 block">Mission Objective</span>
+                <p class="text-3xl md:text-5xl font-display font-medium leading-tight" id="success-statement"></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- X-RAY COMPARISON (Interactive Reveal) -->
+    <section class="h-screen w-full relative bg-black overflow-hidden comparison-wrapper">
+        <!-- Bottom Layer (The Pain - Visible by default) -->
+        <div class="layer-bottom bg-[#EAEAEA] text-black flex flex-col items-center justify-center text-center px-4">
+            <span class="font-mono text-xs font-bold mb-4 opacity-50">HOVER TO REVEAL THE TRUTH</span>
+            <h2 class="font-display text-6xl md:text-8xl opacity-20" id="comp-pain-title">OLD WAY</h2>
+            <div class="mt-8 max-w-md text-left space-y-4 opacity-60" id="comp-pain-list">
+                <!-- JS -->
+            </div>
+        </div>
+
+        <!-- Top Layer (The Gain - Revealed by mask) -->
+        <div class="layer-top flex flex-col items-center justify-center text-center px-4" id="xray-layer">
+            <h2 class="font-display text-6xl md:text-8xl text-[var(--accent)]" id="comp-gain-title">NEW WAY</h2>
+            <div class="mt-8 max-w-md text-left space-y-4 font-bold text-xl" id="comp-gain-list">
+                <!-- JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- SPEAKERS (Horizontal Film Strip) -->
+    <section id="speakers-section" class="h-screen bg-white overflow-hidden relative flex items-center border-y border-black/10">
+        <div class="absolute top-8 left-8 z-10">
+            <h2 class="font-display text-4xl" id="speakers-title"></h2>
+            <p class="text-gray-400 text-xs uppercase tracking-widest mt-2" id="speakers-subtitle"></p>
+        </div>
+        
+        <div class="film-strip-wrapper" id="speakers-track">
+            <!-- JS Injected -->
+        </div>
+    </section>
+
+    <!-- BENEFITS (Bento Grid) -->
+    <section class="py-32 px-6 md:px-24 bg-[#F5F5F5]">
+        <div class="mb-20 max-w-2xl">
+            <span class="text-xs font-bold text-[var(--accent)] uppercase tracking-widest mb-4 block">02 / The Download</span>
+            <h2 class="font-display text-5xl md:text-6xl" id="benefits-title"></h2>
+        </div>
+
+        <div class="bento-grid" id="benefits-grid">
+            <!-- JS Injected -->
+        </div>
+    </section>
+
+    <!-- TARGET AUDIENCE (Holographic Cards) -->
+    <section class="py-32 px-6 md:px-24 bg-[#111] text-white relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+        
+        <div class="relative z-10 max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+                <div>
+                    <span class="text-xs font-bold text-[var(--accent)] uppercase tracking-widest mb-4 block">Access Control</span>
+                    <h2 class="font-display text-5xl md:text-6xl" id="audience-title"></h2>
+                </div>
+                <div class="h-px w-full md:w-64 bg-white/20 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 h-full w-1/2 bg-[var(--accent)] animate-marquee"></div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="audience-list">
+                <!-- JS Injected -->
+            </div>
+            
+            <div class="mt-16 flex items-center gap-4 opacity-60">
+                <div class="w-2 h-2 bg-[var(--accent)] rounded-full animate-pulse"></div>
+                <p class="font-mono text-xs uppercase tracking-widest" id="audience-note"></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-24 px-6 md:px-24 border-t border-black/5 bg-white">
+        <div class="max-w-3xl mx-auto">
+            <h2 class="font-display text-4xl mb-12 text-center" id="faq-title"></h2>
+            <div class="space-y-2" id="faq-list">
+                <!-- JS Injected -->
+            </div>
+        </div>
+    </section>
+
+    <!-- EVENT SUMMARY (New Architectural Section) -->
+    <section class="py-32 px-6 md:px-24 bg-[#EAEAEA] border-t border-black/10">
+        <div class="max-w-7xl mx-auto">
+            <div class="mb-16">
+                <span class="text-xs font-bold text-[var(--accent)] uppercase tracking-widest mb-4 block">03 / Operation Detail</span>
+                <h2 class="font-display text-6xl md:text-7xl mb-4" id="summary-title"></h2>
+                <p class="text-xl text-gray-500 max-w-2xl leading-relaxed" id="summary-subtitle"></p>
+            </div>
+
+            <div class="op-grid">
+                <div class="op-cell large">
+                    <span class="text-xs font-mono text-gray-400 uppercase block mb-2">Mission Brief</span>
+                    <p class="text-sm text-gray-600 leading-relaxed" id="summary-note"></p>
+                </div>
+                <div class="op-cell">
+                    <span class="text-xs font-mono text-gray-400 uppercase block mb-2">Time Window</span>
+                    <p class="font-display text-2xl" id="summary-date"></p>
+                </div>
+                <div class="op-cell">
+                    <span class="text-xs font-mono text-gray-400 uppercase block mb-2">Coordinates</span>
+                    <p class="font-display text-2xl" id="summary-location"></p>
+                </div>
+            </div>
+            
+            <div class="op-grid border-t-0">
+                <div class="op-cell large">
+                    <span class="text-xs font-mono text-gray-400 uppercase block mb-4">Key Directives</span>
+                    <ul class="grid grid-cols-2 gap-4" id="summary-features">
+                        <!-- JS -->
+                    </ul>
+                </div>
+                <div class="op-cell large flex items-center justify-center bg-black text-white group hover:bg-[var(--accent)] cursor-pointer hover-trigger">
+                    <a href="#register" class="text-center">
+                        <span class="block font-display text-3xl mb-2">Secure Entry</span>
+                        <span class="font-mono text-xs uppercase opacity-50 group-hover:opacity-100">Limited Availability</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- REGISTRATION -->
+    <section id="register" class="min-h-screen flex flex-col justify-center items-center py-24 px-6 bg-[#111] text-white relative">
+        <div class="absolute inset-0 opacity-20" style="background-image: url('https://grainy-gradients.vercel.app/noise.svg')"></div>
+        
+        <div class="relative z-10 w-full max-w-2xl">
+            <div class="text-center mb-16">
+                <h2 class="font-display text-6xl md:text-8xl mb-6" id="reg-title"></h2>
+                <div class="flex flex-col items-center gap-4">
+                    <div class="inline-block border border-white/20 px-4 py-2 rounded-full">
+                        <span class="w-2 h-2 bg-[var(--accent)] rounded-full inline-block mr-2 animate-pulse"></span>
+                        <span class="text-xs font-mono" id="reg-spots"></span>
+                    </div>
+                    <p class="text-gray-500 text-xs uppercase tracking-widest" id="reg-note"></p>
+                </div>
+            </div>
+
+            <form id="registrationForm" class="space-y-12">
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-widest block mb-2">01 // First Name</label>
+                        <input type="text" name="firstName" class="input-minimal text-white border-white/20 focus:border-[var(--accent)]" placeholder="Enter name" required>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-widest block mb-2">02 // Last Name</label>
+                        <input type="text" name="lastName" class="input-minimal text-white border-white/20 focus:border-[var(--accent)]" placeholder="Enter name" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase tracking-widest block mb-2">03 // Coordinates</label>
+                    <input type="email" name="email" class="input-minimal text-white border-white/20 focus:border-[var(--accent)]" placeholder="email@address.com" required>
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase tracking-widest block mb-2">04 // Uplink</label>
+                    <input type="tel" name="phone" class="input-minimal text-white border-white/20 focus:border-[var(--accent)]" placeholder="(555) 000-0000" required>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-white text-black font-display font-bold text-xl py-6 rounded-lg hover:bg-[var(--accent)] hover:text-white transition-all duration-300 hover-trigger transform hover:scale-[1.01]">
+                    Confirm Attendance
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- MODAL -->
+    <div class="modal-overlay justify-center items-center" id="questionModalOverlay">
+        <div class="bg-white p-12 max-w-xl w-full rounded-2xl shadow-2xl relative m-4">
+            <button id="modalCloseBtn" class="absolute top-6 right-6 text-2xl hover:text-[var(--accent)]">✕</button>
+            <div id="modal-steps-container"></div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-black text-white/40 py-12 px-6 md:px-24 flex justify-between text-xs uppercase tracking-widest border-t border-white/10">
+        <div class="space-y-1">
+            <div id="footer-copy"></div>
+            <div id="footer-brokerage"></div>
+            <div id="footer-address"></div>
+            <div id="footer-privacy"><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></div>
+        </div>
+        <div>System Status: Online</div>
+    </footer>
+
+
+    <script>
+        // SAFE INJECT
+        function safeInject(id, content, isHtml = false) {
+            const el = document.getElementById(id);
+            if(el) {
+                if(isHtml) el.innerHTML = content;
+                else el.textContent = content;
+            }
+        }
+
+        // WAIT FOR CONFIG TO LOAD
+        function waitForConfig(callback, maxAttempts = 50) {
+            let attempts = 0;
+            const checkConfig = () => {
+                if (typeof config !== 'undefined' && config.meta) {
+                    callback();
+                } else if (attempts < maxAttempts) {
+                    attempts++;
+                    setTimeout(checkConfig, 100);
+                } else {
+                    console.error('Config.js failed to load after maximum attempts');
+                }
+            };
+            checkConfig();
+        }
+
+        // 1. INJECT CONTENT
+        document.addEventListener('DOMContentLoaded', () => {
+            waitForConfig(() => {
+                // Theme Override
+                if(config.settings && config.settings.primaryColor) {
+                    document.documentElement.style.setProperty('--accent', config.settings.primaryColor);
+                }
+
+                document.title = config.meta.pageTitle;
+                
+                // Nav
+                safeInject('nav-logo', config.event.title);
+                safeInject('nav-date', config.event.date);
+                safeInject('nav-spots', config.event.spotsLeft + " SPOTS");
+                safeInject('nav-btn', config.header.ctaText);
+
+                // Hero
+                safeInject('hero-badge', config.hero.badge);
+                safeInject('hero-headline', config.hero.headline, true);
+                safeInject('hero-subtitle', config.hero.subtitle, true);
+                
+                // Hero CTA button
+                const heroCtaText = document.getElementById('hero-cta-text');
+                if(heroCtaText && config.hero.ctaText) {
+                    heroCtaText.textContent = config.hero.ctaText.toUpperCase();
+                }
+                safeInject('hero-urgency', config.hero.urgencyText);
+
+                // Problems
+                if(config.problems && config.problems.items && config.problems.items.length > 0) {
+                    safeInject('problems-title', config.problems.title);
+                    const phtml = config.problems.items.map((item, i) => `
+                        <div class="group border-b border-black/10 py-6 hover:bg-white hover:px-6 transition-all duration-300 rounded-lg hover-trigger">
+                            <div class="flex justify-between items-center cursor-pointer">
+                                <div class="flex gap-6 items-baseline">
+                                    <span class="text-xs font-bold text-[var(--accent)]">0${i+1}</span>
+                                    <p class="text-lg font-medium text-gray-500 group-hover:text-black transition-colors">${item}</p>
+                                </div>
+                                <span class="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--accent)]">→</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    safeInject('problems-list', phtml, true);
+                }
+                
+                // Success Statement
+                if(config.successStatement) {
+                    safeInject('success-statement', config.successStatement);
+                }
+
+                // Comparison (Pain/Gain lists for X-Ray)
+                if(config.comparison && config.comparison.painfulWay && config.comparison.expressWay) {
+                    safeInject('comp-pain-title', config.comparison.painfulWay.title);
+                    if(config.comparison.painfulWay.points) {
+                        safeInject('comp-pain-list', config.comparison.painfulWay.points.map(p => `<p>✕ ${p}</p>`).join(''), true);
+                    }
+                    
+                    safeInject('comp-gain-title', config.comparison.expressWay.title);
+                    if(config.comparison.expressWay.points) {
+                        safeInject('comp-gain-list', config.comparison.expressWay.points.map(p => `<p>✓ ${p}</p>`).join(''), true);
+                    }
+                }
+
+            // Speakers (Horizontal Scroll)
+            if(config.speakers && config.speakers.experts && config.speakers.experts.length > 0) {
+                safeInject('speakers-title', config.speakers.title);
+                safeInject('speakers-subtitle', config.speakers.subtitle, true);
+                
+                const speakerImages = [
+                    "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=500",
+                    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=500",
+                    "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=500",
+                    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=500"
+                ];
+
+                const sHtml = config.speakers.experts.map((exp, i) => `
+                    <div class="film-slide group hover-trigger">
+                        <div class="h-2/3 overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-500">
+                            <img src="${speakerImages[i % speakerImages.length]}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700">
+                        </div>
+                        <div class="p-8 h-1/3 flex flex-col justify-between border-t border-black/10">
+                            <div>
+                                <span class="text-xs font-bold text-[var(--accent)] uppercase tracking-widest">${exp.title}</span>
+                                <h3 class="font-display text-3xl mt-2">${exp.name}</h3>
+                            </div>
+                            <p class="text-sm text-gray-500 line-clamp-2">${exp.description}</p>
+                        </div>
+                    </div>
+                `).join('');
+                safeInject('speakers-track', sHtml, true);
+            }
+
+            // Benefits (Bento Grid)
+            if(config.benefits && config.benefits.items && config.benefits.items.length > 0) {
+                safeInject('benefits-title', config.benefits.title);
+                const bHtml = config.benefits.items.map((item, i) => `
+                    <div class="bento-item hover-trigger">
+                        <div class="absolute top-4 right-4 text-xs font-bold text-[var(--accent)]">0${i+1}</div>
+                        <h3 class="font-display text-2xl mb-4 mt-2">${item.title}</h3>
+                        <p class="text-sm text-gray-500 leading-relaxed">${item.description}</p>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-[var(--accent)] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
+                    </div>
+                `).join('');
+                safeInject('benefits-grid', bHtml, true);
+            }
+
+                // Target Audience
+                if(config.targetAudience && config.targetAudience.items && config.targetAudience.items.length > 0) {
+                    safeInject('audience-title', config.targetAudience.title);
+                    safeInject('audience-note', config.targetAudience.note);
+                    const aHtml = config.targetAudience.items.map(item => `
+                        <div class="corner-card p-8 relative overflow-hidden group hover-trigger">
+                            <div class="scanline"></div>
+                            <div class="mb-6 opacity-50">
+                                <i class="fa-regular fa-id-card text-2xl"></i>
+                            </div>
+                            <p class="text-xl font-display leading-relaxed text-gray-200 group-hover:text-white transition-colors">${item}</p>
+                            <div class="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span class="font-mono text-[10px] text-[var(--accent)]">VERIFIED</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    safeInject('audience-list', aHtml, true);
+                }
+
+                // FAQ
+                if(config.faq && config.faq.questions && config.faq.questions.length > 0) {
+                    safeInject('faq-title', config.faq.title);
+                    const fHtml = config.faq.questions.map(q => `
+                        <div class="border border-black/10 rounded-lg p-6 cursor-pointer group hover:border-[var(--accent)] transition-colors hover-trigger">
+                            <h3 class="font-bold text-lg mb-2 group-hover:text-[var(--accent)] transition-colors">${q.question}</h3>
+                            <p class="text-gray-500 text-sm leading-relaxed">${q.answer}</p>
+                        </div>
+                    `).join('');
+                    safeInject('faq-list', fHtml, true);
+                }
+
+                // Registration
+                safeInject('reg-title', config.registration.title);
+                safeInject('reg-spots', config.registration.urgency, true);
+                safeInject('reg-note', config.registration.note);
+                
+                // Event Summary
+                if(config.eventSummary) {
+                    safeInject('summary-title', config.eventSummary.title);
+                    safeInject('summary-subtitle', config.eventSummary.subtitle);
+                    safeInject('summary-date', config.eventSummary.date);
+                    safeInject('summary-location', config.eventSummary.location);
+                    safeInject('summary-note', config.eventSummary.note);
+                    if(config.eventSummary.features) {
+                        safeInject('summary-features', config.eventSummary.features.map(f => `
+                            <li class="flex items-center gap-3 text-sm text-black/70">
+                                <span class="w-1.5 h-1.5 bg-[var(--accent)] rounded-full"></span>
+                                ${f}
+                            </li>
+                        `).join(''), true);
+                    }
+                }
+                
+                // Form submit button
+                const submitBtn = document.getElementById('submitBtn');
+                if(submitBtn && config.hero && config.hero.ctaText) {
+                    submitBtn.textContent = config.hero.ctaText.toUpperCase();
+                }
+                
+                // Footer
+                safeInject('footer-copy', config.footer.copyright);
+                if(config.footer.brokerage) {
+                    safeInject('footer-brokerage', config.footer.brokerage);
+                }
+                if(config.footer.address) {
+                    safeInject('footer-address', config.footer.address);
+                }
+                const footerPrivacyEl = document.getElementById('footer-privacy');
+                if(footerPrivacyEl && config.footer.privacyPolicy) {
+                    const privacyLink = footerPrivacyEl.querySelector('a');
+                    if(privacyLink) {
+                        privacyLink.href = config.footer.privacyPolicy;
+                    } else {
+                        footerPrivacyEl.innerHTML = `<a href="${config.footer.privacyPolicy}" class="hover:text-white transition-colors">Privacy Policy</a>`;
+                    }
+                }
+
+                hideEmptySections();
+                initLogic();
+                setTimeout(initAnimations, 200);
+            });
+        });
+
+        function hideEmptySections() {
+            // Problems section
+            if (!config.problems || !config.problems.items || config.problems.items.length === 0) {
+                const problemsSection = document.querySelector('#problems-list')?.closest('section');
+                if (problemsSection) problemsSection.style.display = 'none';
+            }
+            
+            // Success Statement (inside problems section)
+            if (!config.successStatement) {
+                const successStatementDiv = document.querySelector('#success-statement')?.closest('div.mt-24');
+                if (successStatementDiv) {
+                    successStatementDiv.style.display = 'none';
+                }
+            }
+            
+            // Comparison section
+            if (!config.comparison || (!config.comparison.painfulWay && !config.comparison.expressWay)) {
+                const comparisonSection = document.querySelector('.comparison-wrapper')?.closest('section');
+                if (comparisonSection) comparisonSection.style.display = 'none';
+            }
+            
+            // Speakers section
+            if (!config.speakers || !config.speakers.experts || config.speakers.experts.length === 0) {
+                const speakersSection = document.querySelector('#speakers-section');
+                if (speakersSection) speakersSection.style.display = 'none';
+            }
+            
+            // Benefits section
+            if (!config.benefits || !config.benefits.items || config.benefits.items.length === 0) {
+                const benefitsSection = document.querySelector('#benefits-grid')?.closest('section');
+                if (benefitsSection) benefitsSection.style.display = 'none';
+            }
+            
+            // Target Audience section
+            if (!config.targetAudience || !config.targetAudience.items || config.targetAudience.items.length === 0) {
+                const audienceSection = document.querySelector('#audience-list')?.closest('section');
+                if (audienceSection) audienceSection.style.display = 'none';
+            }
+            
+            // FAQ section
+            if (!config.faq || !config.faq.questions || config.faq.questions.length === 0) {
+                const faqSection = document.querySelector('#faq-list')?.closest('section');
+                if (faqSection) faqSection.style.display = 'none';
+            }
+            
+            // Event Summary section
+            if (!config.eventSummary) {
+                const summarySection = document.querySelector('#summary-title')?.closest('section');
+                if (summarySection) summarySection.style.display = 'none';
+            }
+        }
+
+        // 2. INTERACTION LOGIC
+        function initLogic() {
+            // Cursor
+            const cursor = document.getElementById('cursor');
+            document.addEventListener('mousemove', e => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+            
+            document.querySelectorAll('.hover-trigger').forEach(el => {
+                el.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
+            });
+
+            // X-Ray Effect
+            const container = document.querySelector('.comparison-wrapper');
+            const topLayer = document.querySelector('.layer-top');
+            
+            container.addEventListener('mousemove', (e) => {
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                // Reveal circle around cursor
+                topLayer.style.clipPath = `circle(300px at ${x}px ${y}px)`;
+            });
+            
+            // Form
+            const form = document.getElementById('registrationForm');
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('submitBtn');
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData);
+                
+                btn.textContent = "Processing...";
+                btn.style.backgroundColor = "#111";
+                btn.style.color = "white";
+                
+                setTimeout(() => showModal(data), 1000);
+            });
+        }
+
+        function showModal(data) {
+            const modal = document.getElementById('questionModalOverlay');
+            const container = document.getElementById('modal-steps-container');
+            const collectedAnswers = {}; // Store by questionId
+            modal.classList.add('active');
+
+            function renderQ(idx) {
+                container.innerHTML = '';
+                if(idx >= config.modalQuestions.length) {
+                    finish();
+                    return;
+                }
+                const q = config.modalQuestions[idx];
+                const div = document.createElement('div');
+                div.innerHTML = `<h3 class="font-display text-3xl mb-8">${q.questionText}</h3>`;
+                
+                q.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-4 mb-3 border border-gray-200 hover:bg-[var(--accent)] hover:text-white transition-all font-medium text-sm uppercase tracking-wide";
+                    btn.textContent = opt.text;
+                    btn.onclick = () => {
+                        // Store answer by questionId
+                        collectedAnswers[q.id] = opt.value;
+                        renderQ(idx + 1);
+                    };
+                    div.appendChild(btn);
+                });
+                container.appendChild(div);
+            }
+
+            function finish() {
+                container.innerHTML = `
+                    <div class="text-center py-10">
+                        <div class="text-6xl mb-4">✓</div>
+                        <h2 class="font-display text-4xl mb-4">Confirmed.</h2>
+                        <p class="text-gray-500 text-sm">Check your inbox: ${data.email}</p>
+                    </div>
+                `;
+                
+                // Build payload matching original script.js format
+                const firstName = data.firstName || '';
+                const lastName = data.lastName || '';
+                const fullName = `${firstName} ${lastName}`.trim();
+                
+                // Get primary agent email
+                const primaryAgentEmail = config.contact && config.contact.agents && config.contact.agents.length > 0 
+                    ? config.contact.agents[0].email 
+                    : '';
+                
+                // Map answers to questions array format
+                const questions = [];
+                for (const questionId in collectedAnswers) {
+                    if (collectedAnswers.hasOwnProperty(questionId)) {
+                        const answerValue = collectedAnswers[questionId];
+                        const questionObj = config.modalQuestions.find(q => q.id === questionId);
+                        if (questionObj) {
+                            const optionObj = questionObj.options.find(opt => opt.value === answerValue);
+                            questions.push({
+                                question: questionObj.questionText,
+                                answer: optionObj ? optionObj.text : answerValue
+                            });
+                        }
+                    }
+                }
+                
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    source: "landing-page",
+                    name: fullName,
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: data.email,
+                    phone: data.phone,
+                    submittedAt: new Date().toISOString(),
+                    eventName: config.event?.title || "",
+                    agentEmail: primaryAgentEmail,
+                    questions: questions,
+                    tag: config.deploymentInfo?.tag || "",
+                    ghlWebhookUrl: config.deploymentInfo?.ghlWebhookUrl || "",
+                    webhookUrl: config.deploymentInfo?.webhookUrl || "",
+                    facebookPixelId: config.deploymentInfo?.facebookPixelId || "",
+                    followUpBossEmail: config.deploymentInfo?.followUpBossEmail || ""
+                };
+                
+                // Submit to webhook
+                const webhookUrl = (config.webhook && config.webhook.enabled && config.webhook.url) 
+                    ? config.webhook.url 
+                    : (config.deploymentInfo?.webhookUrl || '');
+                
+                if(webhookUrl) {
+                    fetch(webhookUrl, {
+                        method: 'POST', 
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    }).then(response => {
+                        if(response.ok) {
+                            console.log('Data successfully submitted to webhook');
+                        } else {
+                            console.error('Webhook submission failed:', response.status);
+                        }
+                    }).catch(error => {
+                        console.error('Webhook submission error:', error);
+                    });
+                }
+                
+                // Update spots counter
+                if(config.event && config.event.spotsLeft > 0) {
+                    config.event.spotsLeft--;
+                    safeInject('nav-spots', config.event.spotsLeft + " SPOTS");
+                    
+                    // Update registration spots display
+                    const urgencyText = `Only ${config.event.spotsLeft} <span class='strikethrough'>${config.event.totalSpots}</span> Spots Available`;
+                    safeInject('reg-spots', urgencyText, true);
+                }
+            }
+
+            document.getElementById('modalCloseBtn').onclick = () => {
+                modal.classList.remove('active');
+                const submitBtn = document.getElementById('submitBtn');
+                if(submitBtn) {
+                    submitBtn.textContent = config.hero && config.hero.ctaText ? config.hero.ctaText.toUpperCase() : "Confirm Attendance";
+                    submitBtn.style.backgroundColor = "white";
+                    submitBtn.style.color = "black";
+                }
+            };
+            renderQ(0);
+        }
+
+        // 3. ANIMATIONS
+        function initAnimations() {
+            const lenis = new Lenis({ duration: 1.2 });
+            function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+            requestAnimationFrame(raf);
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Hero Reveal
+            gsap.from("#hero-headline", { y: 100, opacity: 0, duration: 1.5, ease: "power4.out" });
+            
+            // Speakers Horizontal Scroll
+            const track = document.getElementById('speakers-track');
+            const slides = gsap.utils.toArray('.film-slide');
+            
+            // Calculate real width
+            const width = slides.length * 350; // approximate width per slide
+            
+            gsap.to(slides, {
+                xPercent: -100 * (slides.length - 1),
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#speakers-section",
+                    pin: true,
+                    scrub: 1,
+                    end: "+=2000" // control speed
+                }
+            });
+
+            // Bento Grid Stagger
+            gsap.from(".bento-item", {
+                y: 50, opacity: 0, duration: 0.8, stagger: 0.1,
+                scrollTrigger: { trigger: "#benefits-grid", start: "top 80%" }
+            });
+        }
+    </script>
+</body>
+</html>
