@@ -22,8 +22,7 @@ const config = {
   },
   "hero": {
     "badge": "Exclusive Online Event For First-Time Buyers",
-    "headline": "Learn The <span class='highlight'>A-Z Blueprint</span> To Buying Your First Home... And Discover You're <span class='highlight'>Closer Than You Think!</span> - <em>Totally Free Online</em>",
-    "subtitle": "If you're a first-time buyer in Brantford, Brant County, Norfolk County, or Haldimand County, and tired of feeling <strong>overwhelmed or unsure where to start</strong>, this <strong>free 90-minute online workshop</strong> reveals the simple steps to confidently unlock homeownership.",
+    "headline": "The <span class='highlight'>A-Z Blueprint</span> To <em>Buying Your First Home</em>",    "subtitle": "If you're a first-time buyer in Brantford, Brant County, Norfolk County, or Haldimand County, and tired of feeling <strong>overwhelmed or unsure where to start</strong>, this <strong>free 90-minute online workshop</strong> reveals the simple steps to confidently unlock homeownership.",
     "ctaText": "SECURE MY FREE SPOT",
     "ctaSubtext": null,
     "urgencyText": "Spots are limited to keep it interactive. Register now!"
